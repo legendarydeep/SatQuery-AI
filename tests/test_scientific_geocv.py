@@ -26,7 +26,7 @@ from satquery.change_detection.models.base import (
 )
 from satquery.change_detection.models.changeformer import ChangeFormerAdapter
 from satquery.change_detection.models.classical_adapter import ClassicalSpectralAdapter
-from satquery.change_detection.evidence_fusion import EvidenceFusionEngine
+from satquery.change_detection.evidence_fusion import EvidenceFusionEngine, EvidenceSignal
 from satquery.change_detection.thresholding import ThresholdConfig, ThresholdSelector
 from satquery.change_detection.vlm_guard import (
     GuardrailVerdict,
@@ -262,3 +262,68 @@ def test_adaptive_threshold_unimodal_handling():
     assert report.method_selected == "adaptive_tail"
     assert report.is_bimodal is False
     assert mask[47, 47] == True  # Recover change
+
+
+# ---------------------------------------------------------------------------
+# Test 11: Evidence Fusion Named Signal: SUPPORT -> VERIFIED
+# ---------------------------------------------------------------------------
+
+def test_evidence_fusion_support_signal_verified():
+    """High agreement between learned mask and spectral shifts must produce SUPPORT / VERIFIED."""
+    mask_learned = np.zeros((64, 64), dtype=bool)
+    mask_learned[20:40, 20:40] = True
+
+    mask_classical = np.zeros((64, 64), dtype=bool)
+    mask_classical[22:38, 22:38] = True  # Significant overlap
+
+    prob_learned = np.zeros((64, 64), dtype=np.float32)
+    prob_learned[20:40, 20:40] = 0.88
+
+    diff_ndvi = np.zeros((64, 64), dtype=np.float32)
+    diff_ndvi[20:40, 20:40] = 0.45  # Strong NDVI shift
+
+    report = EvidenceFusionEngine.evaluate(
+        prob_learned=prob_learned,
+        mask_learned=mask_learned,
+        mask_classical=mask_classical,
+        spectral_diffs={"ndvi": diff_ndvi},
+        alignment_quality=0.95,
+    )
+
+    assert report.evidence_signal == EvidenceSignal.SUPPORT
+    assert report.decision_tier == DecisionTier.VERIFIED
+    assert report.spectral_support_fraction >= 0.70
+    assert report.spectral_disagreement_fraction == 0.0
+    assert report.pixel_iou > 0.35
+
+
+# ---------------------------------------------------------------------------
+# Test 12: Evidence Fusion Named Signal: DISAGREEMENT -> UNCERTAIN
+# ---------------------------------------------------------------------------
+
+def test_evidence_fusion_disagreement_signal_uncertain():
+    """Learned change with high confidence contradicted by zero spectral shift must flag DISAGREEMENT / UNCERTAIN."""
+    mask_learned = np.zeros((64, 64), dtype=bool)
+    mask_learned[20:40, 20:40] = True
+
+    mask_classical = np.zeros((64, 64), dtype=bool)
+
+    prob_learned = np.zeros((64, 64), dtype=np.float32)
+    prob_learned[20:40, 20:40] = 0.92  # High model confidence
+
+    # Zero physical change in spectral bands
+    diff_ndvi = np.zeros((64, 64), dtype=np.float32)
+    diff_ndwi = np.zeros((64, 64), dtype=np.float32)
+
+    report = EvidenceFusionEngine.evaluate(
+        prob_learned=prob_learned,
+        mask_learned=mask_learned,
+        mask_classical=mask_classical,
+        spectral_diffs={"ndvi": diff_ndvi, "ndwi": diff_ndwi},
+        alignment_quality=0.92,
+    )
+
+    assert report.evidence_signal == EvidenceSignal.DISAGREEMENT
+    assert report.decision_tier == DecisionTier.UNCERTAIN
+    assert report.spectral_disagreement_fraction > 0.35
+    assert "Flagged for review" in report.diagnostic_reason

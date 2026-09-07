@@ -68,8 +68,12 @@ class ClassicalSpectralAdapter(BaseChangeModel):
                     break
 
         # Extract spectral or SAR indices (returns numpy array or None)
-        t1_idx = extract_index(arr_t1, target_index)
-        t2_idx = extract_index(arr_t2, target_index)
+        if target_index == "band_1":
+            t1_idx = None
+            t2_idx = None
+        else:
+            t1_idx = extract_index(arr_t1, target_index)
+            t2_idx = extract_index(arr_t2, target_index)
 
         # Last resort: use band 0 directly
         if t1_idx is None or t2_idx is None:

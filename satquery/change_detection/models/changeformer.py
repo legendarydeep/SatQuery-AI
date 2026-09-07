@@ -76,6 +76,9 @@ class ChangeFormerAdapter(BaseChangeModel):
         threshold: float = 0.5,
         device: str = "cpu",
         fallback_on_missing: bool = True,
+        is_test_fixture: bool = False,
+        artifact_status: Optional[ModelArtifactStatus] = None,
+        validation_status: Optional[ValidationStatus] = None,
     ):
         super().__init__(name="ChangeFormerV2", version="2.1.0")
         self.patch_size = patch_size
@@ -83,6 +86,14 @@ class ChangeFormerAdapter(BaseChangeModel):
         self.threshold = threshold
         self.device = device
         self.fallback_on_missing = fallback_on_missing
+        self.is_test_fixture = is_test_fixture
+
+        if is_test_fixture:
+            self.artifact_status = ModelArtifactStatus.TEST_FIXTURE
+            self.validation_status = ValidationStatus.UNVALIDATED
+        else:
+            self.artifact_status = artifact_status or ModelArtifactStatus.REAL_CHECKPOINT
+            self.validation_status = validation_status or ValidationStatus.PROVISIONAL_VALIDATION
 
         # Resolve weights path
         resolved_path = weights_path or os.environ.get("CHANGEFORMER_WEIGHTS_PATH")
@@ -272,9 +283,9 @@ class ChangeFormerAdapter(BaseChangeModel):
             change_mask=change_mask,
             probability_map=prob_map,
             model_name=self.name,
-            artifact_status=ModelArtifactStatus.REAL_CHECKPOINT,
+            artifact_status=self.artifact_status,
             runtime_status=RuntimeStatus.INFERENCE_SUCCESS,
-            validation_status=ValidationStatus.PROVISIONAL_VALIDATION,
+            validation_status=self.validation_status,
             decision_tier=tier,
             confidence=evidence_score,
             is_fallback=False,

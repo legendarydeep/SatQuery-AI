@@ -14,6 +14,7 @@ import logging
 import os
 import sys
 import time
+import subprocess
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -25,6 +26,16 @@ from satquery.change_detection.eval import compute_pixel_metrics, compute_geospa
 from satquery.change_detection.pipeline import ChangeDetector
 
 logger = logging.getLogger(__name__)
+
+
+def _get_git_commit() -> str:
+    """Safely retrieves the current git commit SHA or returns UNKNOWN."""
+    try:
+        cmd = ["git", "rev-parse", "HEAD"]
+        commit = subprocess.check_output(cmd, stderr=subprocess.DEVNULL).decode().strip()
+        return commit
+    except Exception:
+        return "UNKNOWN_DIRTY_TREE"
 
 
 @dataclass
@@ -45,9 +56,13 @@ def run_ablation_experiment(
     scenes: List[BenchmarkScene],
     output_report_path: Optional[str] = None,
     output_manifest_path: Optional[str] = None,
+    checkpoint_path: Optional[str] = None,
+    device: str = "cpu",
 ) -> Dict[str, Any]:
     """
     Run evaluation across Classical, Learned (ChangeFormer), and Hybrid models on the TEST split.
+    Records a full reproducibility manifest with git commit, checkpoint SHA-256, threshold
+    configuration, and device metadata.
     """
     test_scenes = [s for s in scenes if s.split == "TEST"]
     if not test_scenes:
@@ -56,14 +71,22 @@ def run_ablation_experiment(
     models_to_test = ["classical", "changeformer"]
     results_by_model: Dict[str, List[Dict[str, float]]] = {m: [] for m in models_to_test}
 
+    checkpoint_sha256 = "NONE_CLASSICAL_ONLY"
+    if checkpoint_path and os.path.isfile(checkpoint_path):
+        h = hashlib.sha256()
+        with open(checkpoint_path, "rb") as f:
+            while chunk := f.read(65536):
+                h.update(chunk)
+        checkpoint_sha256 = h.hexdigest()
+
     for scene in test_scenes:
         r1 = load_raster(scene.t1_path)
         r2 = load_raster(scene.t2_path)
 
         for model_name in models_to_test:
-            detector = ChangeDetector(model_name=model_name, query_hint="change")
+            weights = checkpoint_path if model_name == "changeformer" else None
+            detector = ChangeDetector(model_name=model_name, model_weights_path=weights, query_hint="change")
             res = detector.run_from_arrays(r1, r2)
-            pred_mask = np.array(res["supporting_evidence"].get("otsu_threshold", 0.0)) > 0
             
             # Extract features
             pred_geojson = res["geometry"]
@@ -96,10 +119,25 @@ def run_ablation_experiment(
     # Reproducibility Manifest
     manifest = {
         "experiment_id": f"EXP_{int(time.time())}",
+        "code_commit": _get_git_commit(),
+        "checkpoint_sha256": checkpoint_sha256,
+        "preprocessing_version": "2.1.0_geodetic_equal_area",
+        "threshold_config": {
+            "method": "adaptive_otsu_tail",
+            "smooth_sigma": 1.0,
+            "suppress_pseudo_changes": True,
+            "min_area_px": 5,
+        },
+        "device": device,
         "dataset_version": "SatQuery-Benchmark-v1.0",
-        "scene_count": len(test_scenes),
         "split": "TEST",
-        "code_version": "1.0.0",
+        "scene_count": len(test_scenes),
+        "scene_ids": [s.scene_id for s in test_scenes],
+        "engineering_acceptance_criteria": {
+            "min_f1": 0.75,
+            "min_iou": 0.65,
+            "note": "Engineering deployment gate thresholds for CI/CD, not scientific SOTA claims.",
+        },
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "results_summary": summary,
     }
@@ -118,6 +156,11 @@ def _write_markdown_report(manifest: dict, summary: dict, path: str) -> None:
     lines = [
         "# SatQuery AI — Official GeoCV Ablation Benchmark Report",
         f"**Experiment ID**: `{manifest['experiment_id']}` | **Date**: `{manifest['timestamp']}` | **Split**: `{manifest['split']}`",
+        f"**Git Commit**: `{manifest['code_commit']}` | **Checkpoint SHA-256**: `{manifest['checkpoint_sha256'][:16]}...`",
+        "",
+        "> [!NOTE]",
+        "> **Engineering Acceptance vs Scientific SOTA**: Metrics like F1 ≥ 0.75 and IoU ≥ 0.65 serve as",
+        "> automated software engineering gates for continuous delivery, not competitive scientific SOTA benchmarks.",
         "",
         "## 1. Quantitative Performance Matrix (Mean ± Std)",
         "",
