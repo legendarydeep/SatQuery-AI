@@ -79,6 +79,8 @@ def test_synthetic_onnx_fixture_does_not_promote_to_real_model(tmp_path: Path):
     A synthetic ONNX fixture validates ONNX Runtime execution but MUST NOT
     be classified as REAL_MODEL or REAL_CHECKPOINT.
     """
+    pytest.importorskip("onnx")
+    pytest.importorskip("onnxruntime")
     onnx_file = tmp_path / "synthetic_changeformer.onnx"
     create_synthetic_changeformer_onnx(onnx_file)
 
