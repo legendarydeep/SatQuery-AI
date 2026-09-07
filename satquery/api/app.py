@@ -39,6 +39,7 @@ from pydantic import BaseModel, Field
 from satquery import __version__
 from satquery.change_detection.pipeline import ChangeDetector
 from satquery.core.validator import validate_input_pair, ValidationError
+from satquery.api.v1 import api_v1_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -69,6 +70,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount API v1 Suite (Workstream E & Platform)
+app.include_router(api_v1_router)
 
 # Temp directory for uploaded files (cleaned up after each request)
 _TMP_ROOT = os.path.join(tempfile.gettempdir(), "satquery_uploads")
