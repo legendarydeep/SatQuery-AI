@@ -1,852 +1,813 @@
 /**
- * SatQuery AI — Frontend Application Logic
- * Replicated 3D Earth Globe & Interactive Landing Page (from Aryabhata-Cartographers)
- * + Agentic Remote-Sensing Intelligence Copilot & Change Detection Console
+ * SatQuery AI — Agentic Remote Sensing Copilot Frontend
+ * Interactive Split-Screen Satellite Engine, Agent Planner, Models & Intelligence Console
  */
 
-// ==========================================================================
-// 1. CONTINENTS GEOMETRY DATA (for Procedural Canvas Fallback)
-// ==========================================================================
-const CONTINENTS = {
-    northAmerica: [
-        [-168, 65], [-150, 70], [-120, 70], [-80, 75], [-60, 75], [-50, 60], [-60, 50],
-        [-80, 40], [-80, 25], [-100, 15], [-85, 10], [-80, 9], [-90, 14], [-100, 20],
-        [-105, 20], [-110, 30], [-120, 35], [-125, 48], [-140, 60], [-160, 60]
-    ],
-    greenland: [
-        [-70, 75], [-60, 83], [-20, 83], [-20, 70], [-40, 60], [-50, 60]
-    ],
-    southAmerica: [
-        [-80, 9], [-72, 11], [-60, 10], [-50, -5], [-35, -7], [-40, -22], [-60, -35],
-        [-70, -53], [-75, -53], [-72, -40], [-70, -30], [-75, -20], [-80, -5], [-80, 5]
-    ],
-    africa: [
-        [-17, 32], [-5, 36], [10, 37], [25, 32], [33, 31], [34, 27], [43, 12],
-        [51, 11], [46, -5], [38, -20], [35, -34], [20, -34], [12, -22], [8, 5],
-        [-15, 15], [-17, 20]
-    ],
-    madagascar: [
-        [48, -12], [50, -15], [47, -25], [43, -25], [44, -15]
-    ],
-    eurasia: [
-        [-9, 38], [0, 40], [10, 45], [20, 40], [30, 46], [40, 60], [60, 70], [80, 75],
-        [100, 77], [120, 76], [140, 70], [160, 70], [170, 66], [160, 50], [140, 40],
-        [120, 35], [110, 20], [108, 10], [100, 5], [96, 20], [90, 22], [80, 10],
-        [70, 20], [60, 25], [50, 13], [48, 30], [35, 31], [26, 39], [15, 37],
-        [5, 43], [-5, 43]
-    ],
-    india: [
-        [68, 24], [78, 22], [88, 22], [80, 8], [72, 15]
-    ],
-    scandinavia: [
-        [5, 60], [10, 70], [25, 71], [30, 60], [20, 55]
-    ],
-    greatBritain: [
-        [-5, 50], [-5, 58], [2, 58], [2, 50]
-    ],
-    japan: [
-        [130, 32], [135, 35], [140, 38], [142, 43], [145, 45], [140, 45]
-    ],
-    indonesia: [
-        [95, -5], [110, -7], [120, -8], [115, -3], [100, 0]
-    ],
-    australia: [
-        [113, -22], [120, -15], [135, -12], [142, -10], [146, -15], [150, -25],
-        [150, -35], [140, -38], [130, -35], [115, -34]
-    ],
-    tasmania: [
-        [145, -41], [148, -41], [148, -43], [145, -43]
-    ],
-    antarctica: [
-        [-180, -70], [180, -70], [180, -90], [-180, -90]
-    ]
-};
+document.addEventListener('DOMContentLoaded', () => {
+    // =========================================================================
+    // 1. STATE & CONSTANTS
+    // =========================================================================
+    const state = {
+        splitPercent: 50,
+        isDraggingSplit: false,
+        opacity: 0.75,
+        zoomLevel: 1.0,
+        layersVisible: true,
+        isDrawingRoi: false,
+        roiStart: null,
+        roiBox: null,
+        activeT1Month: 3, // March
+        activeT2Month: 9, // September
+        isAnalyzing: false,
+        activeTab: 'workspace'
+    };
 
-// ==========================================================================
-// 2. PROCEDURAL CANVAS TEXTURE GENERATOR (Oceans, Continents, Specular, Lights)
-// ==========================================================================
-function createEarthTextures() {
-    const colorCanvas = document.createElement('canvas');
-    colorCanvas.width = 1024;
-    colorCanvas.height = 512;
-    const cCtx = colorCanvas.getContext('2d');
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    // Ocean deep blue radial/linear gradient
-    const oceanGrad = cCtx.createLinearGradient(0, 0, 0, 512);
-    oceanGrad.addColorStop(0, '#0a2347');
-    oceanGrad.addColorStop(1, '#020712');
-    cCtx.fillStyle = oceanGrad;
-    cCtx.fillRect(0, 0, 1024, 512);
+    // DOM Elements
+    const splitViewport = document.getElementById('splitViewport');
+    const layerMarch = document.getElementById('layerMarch');
+    const splitDivider = document.getElementById('splitDivider');
+    const splitHandle = document.getElementById('splitHandle');
+    const polygonsOverlay = document.getElementById('polygonsOverlay');
+    const opacitySlider = document.getElementById('opacitySlider');
+    const opacityVal = document.getElementById('opacityVal');
+    const polyTooltip = document.getElementById('polyTooltip');
 
-    // Specular Map Canvas (White for water, Black for land)
-    const specCanvas = document.createElement('canvas');
-    specCanvas.width = 1024;
-    specCanvas.height = 512;
-    const sCtx = specCanvas.getContext('2d');
-    sCtx.fillStyle = '#ffffff';
-    sCtx.fillRect(0, 0, 1024, 512);
+    // Controls
+    const toolCrosshair = document.getElementById('toolCrosshair');
+    const toolZoom = document.getElementById('toolZoom');
+    const toolLayers = document.getElementById('toolLayers');
+    const toolDrawRoi = document.getElementById('toolDrawRoi');
+    const toolDownload = document.getElementById('toolDownload');
 
-    // Emissive Map Canvas (City lights on night side)
-    const emissiveCanvas = document.createElement('canvas');
-    emissiveCanvas.width = 1024;
-    emissiveCanvas.height = 512;
-    const eCtx = emissiveCanvas.getContext('2d');
-    eCtx.fillStyle = '#000000';
-    eCtx.fillRect(0, 0, 1024, 512);
+    // Timeline
+    const monthMar = document.getElementById('monthMar');
+    const monthSep = document.getElementById('monthSep');
+    const timelineConnector = document.getElementById('timelineConnector');
+    const comparisonBadge = document.getElementById('comparisonBadge');
 
-    const mapX = lon => (lon + 180) * (1024 / 360);
-    const mapY = lat => (90 - lat) * (512 / 180);
+    // Chat
+    const chatMessageList = document.getElementById('chatMessageList');
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const btnNewChat = document.getElementById('btnNewChat');
+    const btnUploadImage = document.getElementById('btnUploadImage');
+    const fileUploadInput = document.getElementById('fileUploadInput');
+    const btnAnalyze = document.getElementById('btnAnalyze');
+    const chatThumbCard = document.getElementById('chatThumbCard');
 
-    // Draw Earth continents
-    Object.entries(CONTINENTS).forEach(([_, poly]) => {
-        cCtx.beginPath();
-        poly.forEach(([lon, lat], idx) => {
-            const x = mapX(lon);
-            const y = mapY(lat);
-            if (idx === 0) cCtx.moveTo(x, y);
-            else cCtx.lineTo(x, y);
-        });
-        cCtx.closePath();
+    // Report
+    const btnExportPdf = document.getElementById('btnExportPdf');
+    const btnExportGeoJson = document.getElementById('btnExportGeoJson');
+    const btnGenerateReport = document.getElementById('btnGenerateReport');
+    const btnShareReport = document.getElementById('btnShareReport');
+    const reportParagraph = document.getElementById('reportParagraph');
 
-        const landGrad = cCtx.createLinearGradient(0, 0, 0, 512);
-        landGrad.addColorStop(0, '#15803d');    // Rich green
-        landGrad.addColorStop(0.7, '#166534');  // Mid green
-        landGrad.addColorStop(1, '#1e293b');    // Gray/brown mountains
-        cCtx.fillStyle = landGrad;
-        cCtx.fill();
+    // Modals & Navigation
+    const navTabs = document.querySelectorAll('.nav-tab');
+    const modalBackdrop = document.getElementById('modalBackdrop');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalContent = document.getElementById('modalContent');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+    const toastContainer = document.getElementById('toastContainer');
 
-        cCtx.strokeStyle = '#22c55e';
-        cCtx.lineWidth = 1;
-        cCtx.stroke();
+    // =========================================================================
+    // 2. INTERACTIVE SPLIT SLIDER (< >)
+    // =========================================================================
+    function setSplitPosition(percent) {
+        // Clamp between 2% and 98%
+        const clamped = Math.max(2, Math.min(98, percent));
+        state.splitPercent = clamped;
 
-        // Land in specular map
-        sCtx.beginPath();
-        poly.forEach(([lon, lat], idx) => {
-            const x = mapX(lon);
-            const y = mapY(lat);
-            if (idx === 0) sCtx.moveTo(x, y);
-            else sCtx.lineTo(x, y);
-        });
-        sCtx.closePath();
-        sCtx.fillStyle = '#000000';
-        sCtx.fill();
+        // Update CSS clip-path on top March layer
+        layerMarch.style.clipPath = `polygon(0 0, ${clamped}% 0, ${clamped}% 100%, 0 100%)`;
+        splitDivider.style.left = `${clamped}%`;
+    }
 
-        // City lights on emissive map
-        eCtx.fillStyle = '#fde047';
-        let minX = 1024, maxX = 0, minY = 512, maxY = 0;
-        poly.forEach(([lon, lat]) => {
-            const x = mapX(lon);
-            const y = mapY(lat);
-            if (x < minX) minX = x;
-            if (x > maxX) maxX = x;
-            if (y < minY) minY = y;
-            if (y > maxY) maxY = y;
-        });
-        for (let i = 0; i < 24; i++) {
-            const rx = minX + Math.random() * (maxX - minX);
-            const ry = minY + Math.random() * (maxY - minY);
-            eCtx.beginPath();
-            eCtx.arc(rx, ry, 1 + Math.random() * 1.5, 0, Math.PI * 2);
-            eCtx.fill();
+    function handleSplitMove(clientX) {
+        if (!state.isDraggingSplit) return;
+        const rect = splitViewport.getBoundingClientRect();
+        const offsetX = clientX - rect.left;
+        const percent = (offsetX / rect.width) * 100;
+        setSplitPosition(percent);
+    }
+
+    splitHandle.addEventListener('mousedown', (e) => {
+        state.isDraggingSplit = true;
+        document.body.style.cursor = 'ew-resize';
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (state.isDraggingSplit) {
+            handleSplitMove(e.clientX);
         }
     });
 
-    return {
-        colorMap: new THREE.CanvasTexture(colorCanvas),
-        specularMap: new THREE.CanvasTexture(specCanvas),
-        emissiveMap: new THREE.CanvasTexture(emissiveCanvas)
-    };
-}
+    window.addEventListener('mouseup', () => {
+        if (state.isDraggingSplit) {
+            state.isDraggingSplit = false;
+            document.body.style.cursor = 'default';
+        }
+    });
 
-// ==========================================================================
-// 3. WEB AUDIO SYNTHESIZER (Ambient Drone & Futuristic Chimes)
-// ==========================================================================
-let audioCtx = null;
-let ambientOsc = null;
-let ambientGain = null;
-let audioOn = false;
+    // Touch Support
+    splitHandle.addEventListener('touchstart', (e) => {
+        state.isDraggingSplit = true;
+        e.preventDefault();
+    }, { passive: false });
 
-const audioToggleBtn = document.getElementById("audioToggleBtn");
-const audioDot = document.getElementById("audioDot");
-const audioLabel = document.getElementById("audioLabel");
+    window.addEventListener('touchmove', (e) => {
+        if (state.isDraggingSplit && e.touches.length > 0) {
+            handleSplitMove(e.touches[0].clientX);
+        }
+    }, { passive: true });
 
-function toggleAudio() {
-    if (!audioCtx) {
-        try {
-            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-            audioCtx = new AudioContextClass();
+    window.addEventListener('touchend', () => {
+        state.isDraggingSplit = false;
+    });
 
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(45, audioCtx.currentTime);
+    // Initial position
+    setSplitPosition(50);
 
-            const filter = audioCtx.createBiquadFilter();
-            filter.type = 'lowpass';
-            filter.frequency.setValueAtTime(80, audioCtx.currentTime);
+    // =========================================================================
+    // 3. OPACITY & LAYER CONTROLS
+    // =========================================================================
+    opacitySlider.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        state.opacity = val / 100;
+        opacityVal.textContent = `${val}%`;
+        if (polygonsOverlay && state.layersVisible) {
+            polygonsOverlay.style.opacity = state.opacity;
+        }
+    });
 
-            gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+    toolLayers.addEventListener('click', () => {
+        state.layersVisible = !state.layersVisible;
+        toolLayers.classList.toggle('active', state.layersVisible);
+        polygonsOverlay.style.opacity = state.layersVisible ? state.opacity : 0;
+        showToast(state.layersVisible ? 'Layers & Overlays Enabled' : 'Layers & Overlays Hidden');
+    });
 
-            osc.connect(filter);
-            filter.connect(gain);
-            gain.connect(audioCtx.destination);
+    toolCrosshair.addEventListener('click', () => {
+        setSplitPosition(50);
+        showToast('Split view re-centered to 50%');
+    });
 
-            osc.start();
-            ambientOsc = osc;
-            ambientGain = gain;
-            audioOn = true;
-            updateAudioUI(true);
-        } catch (_) {}
-    } else {
-        if (audioOn) {
-            ambientGain?.gain.setValueAtTime(0, audioCtx.currentTime);
-            audioOn = false;
-            updateAudioUI(false);
+    toolZoom.addEventListener('click', () => {
+        if (state.zoomLevel === 1.0) {
+            state.zoomLevel = 1.35;
+            toolZoom.classList.add('active');
+            showToast('Zoom Level: 1.35x (Northeast Cluster Focus)');
         } else {
-            ambientGain?.gain.setValueAtTime(0.06, audioCtx.currentTime);
-            audioOn = true;
-            updateAudioUI(true);
+            state.zoomLevel = 1.0;
+            toolZoom.classList.remove('active');
+            showToast('Zoom Level: 1.0x (Fit View)');
         }
-    }
-}
-
-function updateAudioUI(isOn) {
-    if (isOn) {
-        audioDot.classList.add("active");
-        audioLabel.innerText = "AUDIO ON";
-    } else {
-        audioDot.classList.remove("active");
-        audioLabel.innerText = "AUDIO OFF";
-    }
-}
-
-audioToggleBtn.addEventListener("click", toggleAudio);
-
-function playChime(freq, duration, type = 'sine', vol = 0.1) {
-    if (!audioCtx || !audioOn) return;
-    try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-        gain.gain.setValueAtTime(vol, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        osc.start();
-        osc.stop(audioCtx.currentTime + duration);
-    } catch (_) {}
-}
-
-// ==========================================================================
-// 4. THREE.JS 3D EARTH GLOBE SIMULATION
-// ==========================================================================
-const globeMount = document.getElementById("globeMount");
-let scene, camera, renderer, earthMesh, cloudMesh, atmosphereMesh;
-let scrollPct = 0;
-let isZooming = false;
-
-const currentPos = new THREE.Vector3(0, 0, 0);
-const currentScale = { val: 1.0 };
-const currentCamZ = { val: 10 };
-
-function initThreeGlobe() {
-    const width = globeMount.clientWidth || window.innerWidth;
-    const height = globeMount.clientHeight || window.innerHeight;
-
-    scene = new THREE.Scene();
-    scene.background = null;
-
-    camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 1000);
-    camera.position.z = 10;
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    globeMount.appendChild(renderer.domElement);
-
-    // Deep space stars background (350 points)
-    const starsGeometry = new THREE.BufferGeometry();
-    const starsMaterial = new THREE.PointsMaterial({ color: 0x8892b0, size: 0.8, sizeAttenuation: true });
-    const starVertices = [];
-    for (let i = 0; i < 350; i++) {
-        const x = (Math.random() - 0.5) * 800;
-        const y = (Math.random() - 0.5) * 800;
-        const z = (Math.random() - 0.5) * 800;
-        starVertices.push(x, y, z);
-    }
-    starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
-    const starField = new THREE.Points(starsGeometry, starsMaterial);
-    scene.add(starField);
-
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
-    scene.add(ambientLight);
-
-    const sunLight = new THREE.DirectionalLight(0xffffff, 1.4);
-    sunLight.position.set(6, 4, 6);
-    scene.add(sunLight);
-
-    // Textures & Fallback
-    const localTextures = createEarthTextures();
-    let earthTexture = localTextures.colorMap;
-    let specularTexture = localTextures.specularMap;
-    let cloudTexture = null;
-
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.crossOrigin = 'anonymous';
-
-    textureLoader.load(
-        'textures/earth_atmos.jpg',
-        (loadedTex) => {
-            earthMesh.material.map = loadedTex;
-            earthMesh.material.needsUpdate = true;
-        },
-        undefined,
-        () => {
-            earthMesh.material.map = localTextures.colorMap;
-            earthMesh.material.roughnessMap = localTextures.specularMap;
-            earthMesh.material.emissiveMap = localTextures.emissiveMap;
-            earthMesh.material.emissive = new THREE.Color('#fac775');
-            earthMesh.material.emissiveIntensity = 0.85;
-            earthMesh.material.needsUpdate = true;
-        }
-    );
-
-    textureLoader.load('textures/earth_specular.jpg', (tex) => {
-        earthMesh.material.roughnessMap = tex;
-        earthMesh.material.needsUpdate = true;
-    });
-
-    textureLoader.load('textures/earth_clouds.png', (tex) => {
-        const cloudGeometry = new THREE.SphereGeometry(3.02, 64, 64);
-        const cloudMaterial = new THREE.MeshStandardMaterial({
-            map: tex,
-            transparent: true,
-            opacity: 0.35,
-            blending: THREE.NormalBlending
+        document.querySelectorAll('.sat-ortho-img, .polygons-svg-overlay').forEach(el => {
+            el.style.transform = state.zoomLevel === 1.0 ? 'none' : 'scale(1.35) translate(-6%, -6%)';
+            el.style.transition = 'transform 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
         });
-        cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
-        scene.add(cloudMesh);
     });
 
-    // Main Earth Mesh
-    const earthGeometry = new THREE.SphereGeometry(3, 64, 64);
-    const earthMaterial = new THREE.MeshStandardMaterial({
-        map: earthTexture,
-        roughnessMap: specularTexture,
-        roughness: 0.8,
-        metalness: 0.1
-    });
-    earthMesh = new THREE.Mesh(earthGeometry, earthMaterial);
-    scene.add(earthMesh);
+    // =========================================================================
+    // 4. VECTOR POLYGONS & HOVER TOOLTIPS
+    // =========================================================================
+    const polygons = document.querySelectorAll('.poly-building, .poly-road');
+    polygons.forEach(poly => {
+        poly.addEventListener('mouseenter', (e) => {
+            const id = poly.getAttribute('data-id');
+            const type = poly.getAttribute('data-type');
+            const area = poly.getAttribute('data-area');
+            const conf = poly.getAttribute('data-conf');
 
-    // Glowing Atmosphere Shell (Cyan Glow #90e0ef)
-    const atmosphereGeometry = new THREE.SphereGeometry(3.28, 64, 64);
-    const atmosphereMaterial = new THREE.ShaderMaterial({
-        vertexShader: `
-            varying vec3 vNormal;
-            void main() {
-                vNormal = normalize(normalMatrix * normal);
-                gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-            }
-        `,
-        fragmentShader: `
-            varying vec3 vNormal;
-            void main() {
-                float intensity = pow(0.72 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.8);
-                gl_FragColor = vec4(0.56, 0.88, 0.94, 1.0) * intensity;
-            }
-        `,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide,
-        transparent: true
-    });
-    atmosphereMesh = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
-    scene.add(atmosphereMesh);
+            polyTooltip.innerHTML = `
+                <div style="font-weight:700; color:#00d2ff; margin-bottom:2px;">${id}: ${type}</div>
+                <div style="color:#94a3b8; font-size:10px;">Area: <strong style="color:#fff;">${area}</strong> | Conf: <strong style="color:#4ade80;">${conf}</strong></div>
+            `;
+            polyTooltip.style.display = 'block';
+        });
 
-    // Hotspot targets (pulsing electric orange markers on globe surface)
-    const hotPointGeometry = new THREE.SphereGeometry(0.045, 16, 16);
-    const hotPointMaterial = new THREE.MeshBasicMaterial({ color: 0xff7438 });
-    const hotspots = [
-        { lat: 19.076, lon: 72.877 }, // Mumbai
-        { lat: 51.507, lon: -0.127 }, // London
-        { lat: 40.712, lon: -74.006 }, // New York
-        { lat: 35.676, lon: 139.65 },  // Tokyo
-    ];
-    hotspots.forEach(c => {
-        const mesh = new THREE.Mesh(hotPointGeometry, hotPointMaterial);
-        const radLat = (c.lat * Math.PI) / 180;
-        const radLon = (c.lon * Math.PI) / 180;
-        const r = 3.015;
-        mesh.position.x = r * Math.cos(radLat) * Math.sin(radLon);
-        mesh.position.y = r * Math.sin(radLat);
-        mesh.position.z = r * Math.cos(radLat) * Math.cos(radLon);
-        earthMesh.add(mesh);
+        poly.addEventListener('mousemove', (e) => {
+            const rect = splitViewport.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            polyTooltip.style.left = `${x}px`;
+            polyTooltip.style.top = `${y}px`;
+        });
+
+        poly.addEventListener('mouseleave', () => {
+            polyTooltip.style.display = 'none';
+        });
+
+        poly.addEventListener('click', () => {
+            const id = poly.getAttribute('data-id');
+            const type = poly.getAttribute('data-type');
+            const area = poly.getAttribute('data-area');
+            showToast(`Inspecting ${id} (${type}) — ${area}`);
+        });
     });
 
-    // Drag controls
-    let isDragging = false;
-    let prevMouseX = 0;
-    let prevMouseY = 0;
+    // =========================================================================
+    // 5. DRAW ROI (Region of Interest)
+    // =========================================================================
+    let roiDrawingBox = null;
 
-    const onPointerDown = (e) => {
-        isDragging = true;
-        const pt = e.touches ? e.touches[0] : e;
-        prevMouseX = pt.clientX;
-        prevMouseY = pt.clientY;
-    };
+    toolDrawRoi.addEventListener('click', () => {
+        state.isDrawingRoi = !state.isDrawingRoi;
+        toolDrawRoi.classList.toggle('active', state.isDrawingRoi);
 
-    const onPointerMove = (e) => {
-        if (!isDragging) return;
-        const pt = e.touches ? e.touches[0] : e;
-        const deltaX = pt.clientX - prevMouseX;
-        const deltaY = pt.clientY - prevMouseY;
-
-        earthMesh.rotation.y += deltaX * 0.003;
-        earthMesh.rotation.x += deltaY * 0.003;
-        if (cloudMesh) {
-            cloudMesh.rotation.y += deltaX * 0.003;
-            cloudMesh.rotation.x += deltaY * 0.003;
-        }
-
-        prevMouseX = pt.clientX;
-        prevMouseY = pt.clientY;
-    };
-
-    const onPointerUp = () => {
-        isDragging = false;
-    };
-
-    globeMount.addEventListener('mousedown', onPointerDown);
-    window.addEventListener('mousemove', onPointerMove);
-    window.addEventListener('mouseup', onPointerUp);
-
-    globeMount.addEventListener('touchstart', onPointerDown, { passive: true });
-    window.addEventListener('touchmove', onPointerMove, { passive: true });
-    window.addEventListener('touchend', onPointerUp);
-
-    // Animation Loop
-    function animate() {
-        requestAnimationFrame(animate);
-
-        // GSAP-like Scroll Mapping
-        let targetX = 0;
-        let targetScale = 1.0;
-        let targetZ = 10;
-        let wire = false;
-
-        if (scrollPct < 0.25) {
-            // Phase 0: Intro (Centered)
-            targetX = 0;
-            targetScale = 1.0;
-            targetZ = 10;
-        } else if (scrollPct >= 0.25 && scrollPct < 0.55) {
-            // Phase 1: Satellite Input (Shifts Right)
-            const localPct = (scrollPct - 0.25) / 0.3;
-            targetX = 0.0 + localPct * 2.2;
-            targetScale = 1.0 - localPct * 0.15;
-            targetZ = 10.0 - localPct * 1.5;
-        } else if (scrollPct >= 0.55 && scrollPct < 0.85) {
-            // Phase 2: Deep Vision (Shifts Left, Wireframe)
-            const localPct = (scrollPct - 0.55) / 0.3;
-            targetX = 2.2 - localPct * 4.4;
-            targetScale = 0.85 + localPct * 0.2;
-            targetZ = 8.5 - localPct * 1.0;
-            wire = true;
+        if (state.isDrawingRoi) {
+            splitViewport.style.cursor = 'crosshair';
+            showToast('Draw ROI Mode: Click and drag on map to select area');
         } else {
-            // Phase 3: Criticality Scan (Centers)
-            const localPct = (scrollPct - 0.85) / 0.15;
-            targetX = -2.2 + localPct * 2.2;
-            targetScale = 1.05 - localPct * 0.05;
-            targetZ = 7.5 + localPct * 0.5;
-        }
-
-        // Smooth interpolation easing
-        currentPos.x += (targetX - currentPos.x) * 0.055;
-        currentScale.val += (targetScale - currentScale.val) * 0.055;
-        currentCamZ.val += (targetZ - currentCamZ.val) * 0.055;
-
-        // Apply transformations
-        earthMesh.position.x = currentPos.x;
-        earthMesh.scale.setScalar(currentScale.val);
-        camera.position.z = currentCamZ.val;
-        earthMesh.material.wireframe = wire;
-
-        if (cloudMesh) {
-            cloudMesh.position.x = currentPos.x;
-            cloudMesh.scale.setScalar(currentScale.val * 1.006);
-        }
-
-        if (!isDragging) {
-            earthMesh.rotation.y += 0.0012;
-            if (cloudMesh) {
-                cloudMesh.rotation.y += 0.0016;
+            splitViewport.style.cursor = 'default';
+            if (roiDrawingBox) {
+                roiDrawingBox.remove();
+                roiDrawingBox = null;
             }
         }
-
-        // Zoom override during transition dive
-        if (isZooming) {
-            currentCamZ.val += (1.4 - currentCamZ.val) * 0.035;
-            camera.position.z = currentCamZ.val;
-        }
-
-        renderer.render(scene, camera);
-    }
-    animate();
-
-    // Window Resize Handler
-    window.addEventListener('resize', () => {
-        const w = globeMount.clientWidth || window.innerWidth;
-        const h = globeMount.clientHeight || window.innerHeight;
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
     });
-}
 
-// ==========================================================================
-// 5. SCROLL DRIVER & INTERACTIVE STORY PANELS
-// ==========================================================================
-const scrollDriver = document.getElementById("scrollDriver");
-const panel0 = document.getElementById("panel0");
-const panel1 = document.getElementById("panel1");
-const panel2 = document.getElementById("panel2");
-const panel3 = document.getElementById("panel3");
-const sysStatus = document.getElementById("sysStatus");
+    splitViewport.addEventListener('mousedown', (e) => {
+        if (!state.isDrawingRoi || e.target === splitHandle) return;
 
-scrollDriver.addEventListener("scroll", () => {
-    const sy = scrollDriver.scrollTop;
-    const maxScroll = scrollDriver.scrollHeight - window.innerHeight;
-    scrollPct = Math.max(0, Math.min(1, sy / (maxScroll || 1)));
+        const rect = splitViewport.getBoundingClientRect();
+        state.roiStart = {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
 
-    // Calculate segment visibilities
-    const opacityP0 = Math.max(0, 1 - scrollPct / 0.18);
-    const opacityP1 = Math.max(0, Math.min(1, (scrollPct - 0.22) / 0.08)) * Math.max(0, 1 - (scrollPct - 0.48) / 0.08);
-    const opacityP2 = Math.max(0, Math.min(1, (scrollPct - 0.52) / 0.08)) * Math.max(0, 1 - (scrollPct - 0.78) / 0.08);
-    const opacityP3 = Math.max(0, Math.min(1, (scrollPct - 0.82) / 0.08));
+        if (roiDrawingBox) roiDrawingBox.remove();
 
-    panel0.style.opacity = opacityP0;
-    panel1.style.opacity = opacityP1;
-    panel2.style.opacity = opacityP2;
-    panel3.style.opacity = opacityP3;
+        roiDrawingBox = document.createElement('div');
+        roiDrawingBox.style.position = 'absolute';
+        roiDrawingBox.style.border = '2px dashed #00d2ff';
+        roiDrawingBox.style.background = 'rgba(0, 210, 255, 0.15)';
+        roiDrawingBox.style.zIndex = '25';
+        roiDrawingBox.style.pointerEvents = 'none';
+        roiDrawingBox.style.left = `${state.roiStart.x}px`;
+        roiDrawingBox.style.top = `${state.roiStart.y}px`;
+        splitViewport.appendChild(roiDrawingBox);
+    });
 
-    panel0.style.pointerEvents = opacityP0 > 0.5 ? 'auto' : 'none';
-    panel1.style.pointerEvents = opacityP1 > 0.5 ? 'auto' : 'none';
-    panel2.style.pointerEvents = opacityP2 > 0.5 ? 'auto' : 'none';
-    panel3.style.pointerEvents = opacityP3 > 0.5 ? 'auto' : 'none';
+    splitViewport.addEventListener('mousemove', (e) => {
+        if (!state.isDrawingRoi || !state.roiStart || !roiDrawingBox) return;
 
-    // Status display update
-    if (scrollPct < 0.25) {
-        sysStatus.innerText = "STANDBY · ORBIT 0";
-    } else if (scrollPct < 0.55) {
-        sysStatus.innerText = "SPECTRAL INGESTION";
-    } else if (scrollPct < 0.85) {
-        sysStatus.innerText = "SEGFORMER ROAD VISION";
-    } else {
-        sysStatus.innerText = "CRITICALITY GRAPH READY";
-    }
-});
+        const rect = splitViewport.getBoundingClientRect();
+        const currentX = e.clientX - rect.left;
+        const currentY = e.clientY - rect.top;
 
-// ==========================================================================
-// 6. "ENTER CONSOLE" EXPERIENCE & TRANSITION TO DASHBOARD
-// ==========================================================================
-const btnEnterExperience = document.getElementById("btnEnterExperience");
-const landingView = document.getElementById("landingView");
-const dashboardView = document.getElementById("dashboardView");
-const telemetryDrawer = document.getElementById("telemetryDrawer");
-const telemetryStatus = document.getElementById("telemetryStatus");
-const telemetryLocation = document.getElementById("telemetryLocation");
-const telemetryCoordsRow = document.getElementById("telemetryCoordsRow");
-const telemetryCoords = document.getElementById("telemetryCoords");
-const telemetryProgressBar = document.getElementById("telemetryProgressBar");
-const btnBackToOrbit = document.getElementById("btnBackToOrbit");
+        const left = Math.min(state.roiStart.x, currentX);
+        const top = Math.min(state.roiStart.y, currentY);
+        const width = Math.abs(currentX - state.roiStart.x);
+        const height = Math.abs(currentY - state.roiStart.y);
 
-btnEnterExperience.addEventListener("click", () => {
-    if (isZooming) return;
-    isZooming = true;
-    btnEnterExperience.disabled = true;
+        roiDrawingBox.style.left = `${left}px`;
+        roiDrawingBox.style.top = `${top}px`;
+        roiDrawingBox.style.width = `${width}px`;
+        roiDrawingBox.style.height = `${height}px`;
+    });
 
-    telemetryDrawer.classList.add("active");
-    telemetryStatus.innerText = "SYNCHRONIZING ORBIT LINKS";
-    playChime(320, 0.4, 'triangle', 0.15);
+    splitViewport.addEventListener('mouseup', () => {
+        if (!state.isDrawingRoi || !state.roiStart) return;
+        state.roiStart = null;
+        showToast('ROI Selected! Analyzing localized change metrics...');
+        setTimeout(() => {
+            appendBotMessage("Targeted ROI query completed. Detected 6 building developments within custom polygon bounds (0.62 km²). Confidence: 93.4%.");
+        }, 1200);
+    });
 
-    // Geolocation detection
-    if ("geolocation" in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            async (pos) => {
-                const lat = pos.coords.latitude;
-                const lng = pos.coords.longitude;
-                telemetryCoords.innerText = `${lat.toFixed(5)}°N, ${lng.toFixed(5)}°E`;
-                telemetryCoordsRow.style.display = "flex";
+    // =========================================================================
+    // 6. DOWNLOAD / SNAPSHOT
+    // =========================================================================
+    toolDownload.addEventListener('click', () => {
+        showToast('Generating high-resolution composite GeoTIFF / snapshot...');
+        setTimeout(() => {
+            const link = document.createElement('a');
+            link.href = 'textures/t2_september.jpg';
+            link.download = 'satquery_sentinel2_september2024_analysis.jpg';
+            link.click();
+            showToast('✓ Snapshot downloaded successfully');
+        }, 600);
+    });
 
-                try {
-                    const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
-                    const data = await res.json();
-                    const city = data.address.city || data.address.town || data.address.suburb || data.address.village || 'Detected Region';
-                    const country = data.address.country || 'Host GPS';
-                    telemetryLocation.innerText = `${city.toUpperCase()}, ${country.toUpperCase()}`;
-                } catch (_) {
-                    telemetryLocation.innerText = "GPS SIGNAL ONLINE";
-                }
+    // =========================================================================
+    // 7. TIMELINE SCRUBBING
+    // =========================================================================
+    document.querySelectorAll('.month-node').forEach(node => {
+        node.addEventListener('click', () => {
+            const monthNum = parseInt(node.getAttribute('data-month'), 10);
+            const monthName = MONTHS[monthNum - 1];
 
-                telemetryStatus.innerText = "TARGET SECURED";
-                playChime(1000, 1.2, 'sine', 0.2);
-            },
-            () => {
-                telemetryCoords.innerText = "19.04400°N, 72.84200°E";
-                telemetryCoordsRow.style.display = "flex";
-                telemetryLocation.innerText = "MUMBAI, INDIA";
-                telemetryStatus.innerText = "FORCED FALLBACK GATEWAY";
-                playChime(420, 1.0, 'sawtooth', 0.1);
+            // If click before or after September
+            if (monthNum <= 6) {
+                state.activeT1Month = monthNum;
+                document.querySelectorAll('.month-node').forEach(n => n.classList.remove('active-t1'));
+                node.classList.add('active-t1');
+            } else {
+                state.activeT2Month = monthNum;
+                document.querySelectorAll('.month-node').forEach(n => n.classList.remove('active-t2'));
+                node.classList.add('active-t2');
             }
-        );
-    } else {
-        telemetryCoords.innerText = "19.04400°N, 72.84200°E";
-        telemetryCoordsRow.style.display = "flex";
-        telemetryLocation.innerText = "MUMBAI, INDIA";
-        telemetryStatus.innerText = "FALLBACK SECURED";
-    }
 
-    // Progress counter animation
-    let val = 0;
-    const progressTimer = setInterval(() => {
-        val += 2;
-        if (val >= 100) {
-            val = 100;
-            clearInterval(progressTimer);
-            setTimeout(() => {
-                // Smooth transition into dashboard
-                landingView.classList.add("landing-exit");
-                dashboardView.classList.remove("dashboard-hidden");
-                dashboardView.classList.add("dashboard-visible");
-            }, 750);
-        }
-        telemetryProgressBar.style.width = `${val}%`;
-    }, 40);
-});
+            const t1Name = MONTHS[state.activeT1Month - 1];
+            const t2Name = MONTHS[state.activeT2Month - 1];
 
-// Back to Orbit View
-btnBackToOrbit.addEventListener("click", () => {
-    dashboardView.classList.remove("dashboard-visible");
-    dashboardView.classList.add("dashboard-hidden");
+            comparisonBadge.innerHTML = `<strong>${t1Name} ↔ ${t2Name}</strong> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>`;
+            document.querySelector('.time-badge-t1').textContent = `T1 - ${t1Name} 2024`;
+            document.querySelector('.time-badge-t2').textContent = `T2 - ${t2Name} 2024`;
 
-    landingView.classList.remove("landing-exit");
-    isZooming = false;
-    currentCamZ.val = 10;
-    if (camera) camera.position.z = 10;
-    currentPos.set(0, 0, 0);
-    currentScale.val = 1.0;
-    btnEnterExperience.disabled = false;
-    telemetryDrawer.classList.remove("active");
-    telemetryProgressBar.style.width = "0%";
-    scrollDriver.scrollTop = 0;
-});
-
-// Share Button
-document.getElementById("shareBtn").addEventListener("click", () => {
-    if (navigator.share) {
-        navigator.share({
-            title: "SatQuery AI",
-            text: "AI-Powered Satellite Road Intelligence and Remote Sensing Copilot",
-            url: window.location.href
-        }).catch(() => {});
-    } else {
-        navigator.clipboard?.writeText(window.location.href);
-        alert("SatQuery AI link copied to clipboard!");
-    }
-});
-
-
-// ==========================================================================
-// 7. SATQUERY AI INVESTIGATION DASHBOARD & CONSOLE LOGIC
-// ==========================================================================
-const API_URL = "http://localhost:8000/api";
-let currentSessionId = "demo_session_" + Math.random().toString(36).substring(7);
-let lastResponse = null;
-
-// Dashboard Elements
-const queryForm = document.getElementById("queryForm");
-const queryInput = document.getElementById("queryInput");
-const chatMessages = document.getElementById("chatMessages");
-const traceSteps = document.getElementById("traceSteps");
-const finalConfidence = document.getElementById("finalConfidence");
-const sigHash = document.getElementById("sigHash");
-const sensorBadge = document.getElementById("sensorBadge");
-const modeBadge = document.getElementById("modeBadge");
-const dropzone = document.getElementById("dropzone");
-const fileInput = document.getElementById("fileInput");
-const validationText = document.getElementById("validationText");
-
-const waterOverlay = document.getElementById("waterOverlay");
-const changeOverlay = document.getElementById("changeOverlay");
-const urbanOverlay = document.getElementById("urbanOverlay");
-
-// Dropzone click
-dropzone.addEventListener("click", () => fileInput.click());
-
-fileInput.addEventListener("change", async (e) => {
-    const files = e.target.files;
-    if (!files.length) return;
-
-    validationText.innerText = `Uploading and co-registering ${files.length} file(s)...`;
-    const formData = new FormData();
-    formData.append("session_id", currentSessionId);
-    for (let f of files) {
-        formData.append("files", f);
-    }
-
-    try {
-        const res = await fetch(`${API_URL}/validate-inputs`, {
-            method: "POST",
-            body: formData
+            showToast(`Time window updated: ${t1Name} 2024 vs ${t2Name} 2024`);
         });
-        const data = await res.json();
-        if (data.valid) {
-            validationText.innerText = `Validated: Mode '${data.mode}' · ${data.images.length} raster(s) co-registered.`;
-            sensorBadge.innerText = data.mode === "optical_sar" ? "Cartosat-2S & RISAT Paired" : "ISRO Cartosat Standard";
-        } else {
-            validationText.innerText = `Validation Error: ${data.errors.join(", ")}`;
-        }
-    } catch (err) {
-        validationText.innerText = `Simulated Ingestion: Loaded local test session (${files.length} rasters).`;
-    }
-});
+    });
 
-function setPrompt(promptText) {
-    queryInput.value = promptText;
-    queryForm.dispatchEvent(new Event("submit"));
-}
-
-queryForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const query = queryInput.value.trim();
-    if (!query) return;
-
-    appendMessage(query, "user");
-    queryInput.value = "";
-
-    // Reset visual overlays
-    waterOverlay.style.display = "none";
-    changeOverlay.style.display = "none";
-    urbanOverlay.style.display = "none";
-
-    try {
-        const res = await fetch(`${API_URL}/query`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                session_id: currentSessionId,
-                query: query,
-                force_mode: "auto"
-            })
-        });
-
-        if (!res.ok) throw new Error("Query API call failed");
-        const data = await res.json();
-        lastResponse = data;
-        renderResponse(data);
-    } catch (err) {
-        renderSimulatedResponse(query);
-    }
-});
-
-function appendMessage(text, sender) {
-    const msgDiv = document.createElement("div");
-    msgDiv.className = `message ${sender}-message`;
-    msgDiv.innerHTML = `<strong>${sender === "user" ? "You" : "SatQuery AI"}:</strong> ${text}`;
-    chatMessages.appendChild(msgDiv);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-function renderResponse(data) {
-    appendMessage(data.final_answer, "ai");
-
-    finalConfidence.innerText = `Confidence: ${(data.confidence * 100).toFixed(1)}%`;
-    sigHash.innerText = data.run_signature_hash ? data.run_signature_hash.substring(0, 32) + "..." : "e3b0c442...";
-    modeBadge.innerText = `Mode: ${data.execution_mode.toUpperCase()}`;
-    sensorBadge.innerText = data.sensor_calibration_badge;
-
-    // Render ReAct Trace Drawer
-    traceSteps.innerHTML = "";
-    data.trace.forEach(step => {
-        const stepCard = document.createElement("div");
-        stepCard.className = "trace-step-card";
-        stepCard.innerHTML = `
-            <div class="trace-step-num">
-                <span>Step ${step.step_number}: ${step.tool_called}</span>
-                <span>${(step.step_confidence * 100).toFixed(0)}%</span>
+    // =========================================================================
+    // 8. CHAT INTERACTION & LIVE RE-ACT AGENT SIMULATION
+    // =========================================================================
+    function appendUserMessage(text) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const item = document.createElement('div');
+        item.className = 'chat-item user-item';
+        item.innerHTML = `
+            <div class="chat-avatar user-avatar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
             </div>
-            <div class="why-box"><strong>Why this tool:</strong> ${step.why_this_tool}</div>
-            <div style="color:#94a3b8;"><strong>Observation:</strong> ${step.observation_summary}</div>
+            <div class="chat-bubble-wrap">
+                <div class="chat-bubble user-bubble">${escapeHtml(text)}</div>
+                <span class="chat-time">${time}</span>
+            </div>
         `;
-        traceSteps.appendChild(stepCard);
+        chatMessageList.appendChild(item);
+        chatMessageList.scrollTop = chatMessageList.scrollHeight;
+    }
+
+    function appendBotMessage(contentHtml) {
+        const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const item = document.createElement('div');
+        item.className = 'chat-item bot-item';
+        item.innerHTML = `
+            <div class="chat-avatar bot-avatar">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                    <circle cx="12" cy="5" r="2"></circle>
+                    <path d="M12 7v4"></path>
+                    <line x1="8" y1="16" x2="8" y2="16"></line>
+                    <line x1="16" y1="16" x2="16" y2="16"></line>
+                </svg>
+            </div>
+            <div class="chat-bubble-wrap">
+                <div class="chat-bubble bot-bubble">${contentHtml}</div>
+                <span class="chat-time">${time}</span>
+            </div>
+        `;
+        chatMessageList.appendChild(item);
+        chatMessageList.scrollTop = chatMessageList.scrollHeight;
+    }
+
+    function triggerAgentPipeline(query) {
+        if (state.isAnalyzing) return;
+        state.isAnalyzing = true;
+
+        // Animate Agent Planner steps
+        const stepRows = document.querySelectorAll('.planner-step-row');
+        
+        // Reset steps
+        stepRows.forEach((row, i) => {
+            row.className = 'planner-step-row step-pending';
+            row.querySelector('.step-badge').className = 'step-badge badge-pending';
+            row.querySelector('.step-badge').textContent = 'Pending';
+        });
+
+        const stepNames = [
+            'Understand Query',
+            'Select Models',
+            'Register Images',
+            'Detect Changes',
+            'Ground Objects',
+            'Generate Explanation'
+        ];
+
+        let currentStep = 0;
+        const interval = setInterval(() => {
+            if (currentStep < stepRows.length) {
+                // Set current as running
+                stepRows[currentStep].className = 'planner-step-row step-running';
+                stepRows[currentStep].querySelector('.step-badge').className = 'step-badge badge-running';
+                stepRows[currentStep].querySelector('.step-badge').textContent = '● Running';
+
+                // Mark previous as completed
+                if (currentStep > 0) {
+                    stepRows[currentStep - 1].className = 'planner-step-row step-done';
+                    stepRows[currentStep - 1].querySelector('.step-badge').className = 'step-badge badge-completed';
+                    stepRows[currentStep - 1].querySelector('.step-badge').textContent = 'Completed';
+                }
+                currentStep++;
+            } else {
+                // Final step complete
+                stepRows[stepRows.length - 1].className = 'planner-step-row step-done';
+                stepRows[stepRows.length - 1].querySelector('.step-badge').className = 'step-badge badge-completed';
+                stepRows[stepRows.length - 1].querySelector('.step-badge').textContent = 'Completed';
+
+                clearInterval(interval);
+                state.isAnalyzing = false;
+
+                // Formulate intelligent answer
+                generateQueryResponse(query);
+            }
+        }, 500);
+    }
+
+    function generateQueryResponse(query) {
+        const q = query.toLowerCase();
+        let answer = '';
+
+        if (q.includes('road') || q.includes('highway') || q.includes('corridor')) {
+            answer = `
+                <p class="summary-highlight">Road Infrastructure Changes Identified</p>
+                <div class="findings-list">
+                    <span class="findings-title">Key findings:</span>
+                    <ul>
+                        <li><span class="bullet-dot">•</span> 2 new paved access spurs detected</li>
+                        <li><span class="bullet-dot">•</span> 1.68 km total corridor length added</li>
+                        <li><span class="bullet-dot">•</span> Direct connection to northeast logistics hub</li>
+                        <li><span class="bullet-dot">•</span> High segmentation confidence (93.9%)</li>
+                    </ul>
+                </div>
+            `;
+        } else if (q.includes('water') || q.includes('lake') || q.includes('flood')) {
+            answer = `
+                <p class="summary-highlight">Hydrological Body Analysis</p>
+                <div class="findings-list">
+                    <span class="findings-title">Key findings:</span>
+                    <ul>
+                        <li><span class="bullet-dot">•</span> Central pond surface area preserved (0.41 km²)</li>
+                        <li><span class="bullet-dot">•</span> NDWI differencing confirms no encroachment</li>
+                        <li><span class="bullet-dot">•</span> Seasonal water level fluctuation: -4.2%</li>
+                        <li><span class="bullet-dot">•</span> High confidence (96.1%)</li>
+                    </ul>
+                </div>
+            `;
+        } else if (q.includes('vegetation') || q.includes('forest') || q.includes('green')) {
+            answer = `
+                <p class="summary-highlight">Vegetation & Canopy Assessment</p>
+                <div class="findings-list">
+                    <span class="findings-title">Key findings:</span>
+                    <ul>
+                        <li><span class="bullet-dot">•</span> Central tree cluster dense cover maintained</li>
+                        <li><span class="bullet-dot">•</span> Agricultural plots converted to built-up: 1.82 km²</li>
+                        <li><span class="bullet-dot">•</span> Net NDVI differential: -0.18 in northwest quadrant</li>
+                        <li><span class="bullet-dot">•</span> High confidence (92.4%)</li>
+                    </ul>
+                </div>
+            `;
+        } else {
+            answer = `
+                <p class="summary-highlight">Bi-Temporal Analysis Completed</p>
+                <div class="findings-list">
+                    <span class="findings-title">Key findings:</span>
+                    <ul>
+                        <li><span class="bullet-dot">•</span> 24 new structures identified & segmented</li>
+                        <li><span class="bullet-dot">•</span> Total built-up increase: 12.4%</li>
+                        <li><span class="bullet-dot">•</span> Grounded by InternVL 3 & ChangeStar</li>
+                        <li><span class="bullet-dot">•</span> Overall separation score: 91%</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        appendBotMessage(answer);
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const text = chatInput.value.trim();
+        if (!text) return;
+
+        appendUserMessage(text);
+        chatInput.value = '';
+        triggerAgentPipeline(text);
     });
 
-    // Toggle Visual Overlays based on tool outputs
-    if (data.composite_overlays) {
-        if (data.final_answer.toLowerCase().includes("water") || data.final_answer.toLowerCase().includes("inundation")) {
-            waterOverlay.style.display = "block";
+    btnAnalyze.addEventListener('click', () => {
+        const text = chatInput.value.trim() || 'Execute comprehensive bi-temporal change detection on active tile';
+        appendUserMessage(text);
+        chatInput.value = '';
+        triggerAgentPipeline(text);
+    });
+
+    btnNewChat.addEventListener('click', () => {
+        chatMessageList.innerHTML = `
+            <div class="chat-item bot-item">
+                <div class="chat-avatar bot-avatar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                        <circle cx="12" cy="5" r="2"></circle>
+                        <path d="M12 7v4"></path>
+                    </svg>
+                </div>
+                <div class="chat-bubble-wrap">
+                    <div class="chat-bubble bot-bubble">
+                        Welcome to <strong>SatQuery AI</strong> session. Upload satellite GeoTIFF pairs or ask any Earth-observation question below.
+                    </div>
+                    <span class="chat-time">Just now</span>
+                </div>
+            </div>
+        `;
+        showToast('New investigation session started');
+    });
+
+    btnUploadImage.addEventListener('click', () => {
+        fileUploadInput.click();
+    });
+
+    fileUploadInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const fileName = e.target.files[0].name;
+            showToast(`Loaded imagery: ${fileName}. Validating co-registration...`);
+            setTimeout(() => {
+                appendBotMessage(`<strong>Co-registration validated:</strong> "${fileName}" matched to Tile 43QFC with 0.12 pixel spatial RMS error.`);
+            }, 800);
         }
-        if (data.final_answer.toLowerCase().includes("change") || data.final_answer.toLowerCase().includes("expanded")) {
-            changeOverlay.style.display = "block";
-        }
-        if (data.final_answer.toLowerCase().includes("built-up") || data.final_answer.toLowerCase().includes("structure")) {
-            urbanOverlay.style.display = "block";
-        }
+    });
+
+    if (chatThumbCard) {
+        chatThumbCard.addEventListener('click', () => {
+            setSplitPosition(25);
+            showToast('Centered on Northeast Cluster (>90% confidence)');
+        });
     }
-}
 
-function renderSimulatedResponse(query) {
-    const qLower = query.toLowerCase();
-    let answer = "Comprehensive scene analysis: Identified agricultural and built-up land cover regions.";
-    let toolName = "vqa_grounding";
-    let why = "User requested visual inspection; dispatched single-image RS VLM.";
+    // =========================================================================
+    // 9. REPORT ACTIONS (Export PDF, GeoJSON, Generate, Share)
+    // =========================================================================
+    btnExportPdf.addEventListener('click', () => {
+        showToast('Generating official SIH / ISRO Intelligence PDF Report...');
+        setTimeout(() => {
+            const blob = new Blob([
+                "SATQUERY AI — REMOTE SENSING INTELLIGENCE REPORT\n",
+                "ISRO SIH26167 Problem Statement\n",
+                "Timestamp: September 2024 | Tile: 43QFC | Sensor: Sentinel-2\n",
+                "Area Detected: 2.4 km² | New Buildings: 24 | Roads: 2\n",
+                "Confidence Score: 91.0%\n\n",
+                "Key Evidence:\n",
+                "- Detected new impervious surfaces in northwest/northeast quadrants.\n",
+                "- Confirmed by SAM2 and ChangeStar bi-temporal difference masks.\n",
+                "- STSF-Net pseudo-change filter eliminated illumination artifacts.\n"
+            ], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'satquery_intelligence_report_43QFC.pdf';
+            a.click();
+            showToast('✓ PDF Intelligence Report downloaded');
+        }, 600);
+    });
 
-    if (qLower.includes("change") || qLower.includes("t1") || qLower.includes("t2")) {
-        answer = "Detected 14.2% physical surface change (212,400 m²) between T1 and T2. Pseudo-change filter suppressed 1,420 noise pixels.";
-        toolName = "change_detection";
-        why = "User requested bi-temporal comparison; activated differential change detector with pseudo-change suppression.";
-        changeOverlay.style.display = "block";
-    } else if (qLower.includes("sar") || qLower.includes("cloud") || qLower.includes("radar")) {
-        answer = "Cross-modal optical–SAR reasoning complete. Estimated optical cloud cover: 42.1%. Microwave SAR backscatter (-14.2 dB) resolved ground inundation covering ~28.5% AOI.";
-        toolName = "optical_sar_fusion";
-        why = "Optical and SAR pairs detected; dispatched gated cross-modal specialist with cloud discounting.";
-        waterOverlay.style.display = "block";
-    } else {
-        urbanOverlay.style.display = "block";
-    }
+    btnExportGeoJson.addEventListener('click', () => {
+        showToast('Generating standardized GeoJSON feature collection...');
+        const geojson = {
+            type: "FeatureCollection",
+            crs: { type: "name", properties: { name: "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+            features: Array.from(polygons).map((poly, idx) => ({
+                type: "Feature",
+                properties: {
+                    id: poly.getAttribute('data-id'),
+                    structure_type: poly.getAttribute('data-type'),
+                    area_m2: poly.getAttribute('data-area'),
+                    confidence: poly.getAttribute('data-conf')
+                },
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [[[77.594 + idx*0.001, 12.971 + idx*0.001], [77.595, 12.971], [77.595, 12.972], [77.594, 12.972], [77.594 + idx*0.001, 12.971 + idx*0.001]]]
+                }
+            }))
+        };
 
-    const mockData = {
-        final_answer: answer,
-        confidence: 0.86,
-        execution_mode: "real_model",
-        sensor_calibration_badge: "Cartosat-2S & RISAT Calibrated",
-        run_signature_hash: "a4f8e219cb847291a039ff018247dbac82910482019482910481928471928471",
-        composite_overlays: { features: [] },
-        trace: [
-            {
-                step_number: 1,
-                tool_called: toolName,
-                why_this_tool: why,
-                observation_summary: answer,
-                step_confidence: 0.86
+        const blob = new Blob([JSON.stringify(geojson, null, 2)], { type: 'application/geo+json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'satquery_urban_polygons_43QFC.geojson';
+        a.click();
+        showToast('✓ GeoJSON exported successfully');
+    });
+
+    btnGenerateReport.addEventListener('click', () => {
+        reportParagraph.textContent = 'Re-synthesizing multi-modal telemetry and spectral differences...';
+        showToast('Re-generating AI report summary...');
+        setTimeout(() => {
+            reportParagraph.textContent = 'Comparison between March and September imagery detected a 12.4% increase in urban development concentrated in the northeast quadrant. Twenty-four newly constructed buildings were identified with high confidence. No significant vegetation loss was observed.';
+            showToast('✓ AI Report updated with latest sensor passes');
+        }, 900);
+    });
+
+    btnShareReport.addEventListener('click', () => {
+        navigator.clipboard.writeText(window.location.href);
+        showToast('✓ Session permalink copied to clipboard');
+    });
+
+    // =========================================================================
+    // 10. MODALS & TAB NAVIGATION
+    // =========================================================================
+    navTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            const tabName = tab.getAttribute('data-tab');
+            navTabs.forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+
+            if (tabName === 'workspace') {
+                modalBackdrop.classList.remove('active');
+                return;
             }
-        ]
-    };
-    renderResponse(mockData);
-}
 
-// Export Buttons
-document.getElementById("btnExportPdf").addEventListener("click", () => {
-    window.open(`${API_URL}/export-report?session_id=${currentSessionId}&format=pdf`, "_blank");
-});
+            openModal(tabName);
+        });
+    });
 
-document.getElementById("btnExportGeoJson").addEventListener("click", () => {
-    window.open(`${API_URL}/export-report?session_id=${currentSessionId}&format=geojson`, "_blank");
-});
+    function openModal(type) {
+        modalBackdrop.classList.add('active');
 
-// Initialize 3D Globe on DOM Ready
-document.addEventListener("DOMContentLoaded", () => {
-    initThreeGlobe();
+        if (type === 'models') {
+            modalTitle.textContent = 'Foundation & VLM Models Registry (6 Active)';
+            modalContent.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <p>SatQuery AI orchestrates specialized remote-sensing foundation models in a ReAct framework:</p>
+                    <table style="width:100%; border-collapse:collapse; font-size:11.5px; text-align:left;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #1e3a6b; color:#38bdf8;">
+                                <th style="padding:6px;">Model</th>
+                                <th style="padding:6px;">Architecture</th>
+                                <th style="padding:6px;">Role</th>
+                                <th style="padding:6px;">Latency</th>
+                                <th style="padding:6px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <td style="padding:6px; font-weight:600; color:#fff;">InternVL 3</td>
+                                <td style="padding:6px;">Vision-Language</td>
+                                <td style="padding:6px;">Spatial QA & Description</td>
+                                <td style="padding:6px;">12.4s</td>
+                                <td style="padding:6px; color:#00d2ff;">● Active</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <td style="padding:6px; font-weight:600; color:#fff;">Florence-2</td>
+                                <td style="padding:6px;">Multimodal Unified</td>
+                                <td style="padding:6px;">Visual Grounding</td>
+                                <td style="padding:6px;">8.7s</td>
+                                <td style="padding:6px; color:#4ade80;">✓ Ready</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <td style="padding:6px; font-weight:600; color:#fff;">SAM2</td>
+                                <td style="padding:6px;">Segment Anything v2</td>
+                                <td style="padding:6px;">Zero-shot Instance Mask</td>
+                                <td style="padding:6px;">6.1s</td>
+                                <td style="padding:6px; color:#4ade80;">✓ Ready</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <td style="padding:6px; font-weight:600; color:#fff;">GroundingDINO</td>
+                                <td style="padding:6px;">Open-Set Detector</td>
+                                <td style="padding:6px;">Bounding Box Discovery</td>
+                                <td style="padding:6px;">9.8s</td>
+                                <td style="padding:6px; color:#00d2ff;">● Active</td>
+                            </tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                                <td style="padding:6px; font-weight:600; color:#fff;">ChangeStar</td>
+                                <td style="padding:6px;">Bi-Temporal Siamese</td>
+                                <td style="padding:6px;">Dense Change Differencing</td>
+                                <td style="padding:6px;">14.2s</td>
+                                <td style="padding:6px; color:#4ade80;">✓ Ready</td>
+                            </tr>
+                            <tr>
+                                <td style="padding:6px; font-weight:600; color:#fff;">Segment Anything</td>
+                                <td style="padding:6px;">ViT-H SAM</td>
+                                <td style="padding:6px;">Polygon Refinement</td>
+                                <td style="padding:6px;">7.6s</td>
+                                <td style="padding:6px; color:#4ade80;">✓ Ready</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        } else if (type === 'datasets') {
+            modalTitle.textContent = 'Remote Sensing Satellite Feeds';
+            modalContent.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:12px;">
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:12px;">
+                        <h4 style="color:#00d2ff; margin-bottom:4px;">Sentinel-2 MSI (Optical)</h4>
+                        <p style="font-size:11.5px; color:#cbd5e1;">10m spatial resolution across 13 spectral bands (RGB, NIR, RedEdge, SWIR). 5-day revisit cycle.</p>
+                    </div>
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:12px;">
+                        <h4 style="color:#38bdf8; margin-bottom:4px;">Cartosat-2S (ISRO Optical High-Res)</h4>
+                        <p style="font-size:11.5px; color:#cbd5e1;">0.65m panchromatic and 2.0m 4-band multispectral sensor. Optimized for cadastral mapping.</p>
+                    </div>
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:12px;">
+                        <h4 style="color:#a855f7; margin-bottom:4px;">RISAT-1A / EOS-04 (ISRO C-Band SAR)</h4>
+                        <p style="font-size:11.5px; color:#cbd5e1;">Microwave SAR penetration through clouds, haze, and precipitation for all-weather flood & terrain monitoring.</p>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'history') {
+            modalTitle.textContent = 'Investigation History & Audit Trail';
+            modalContent.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="color:#fff; font-weight:600;">Urban Expansion: Bangalore Northeast (Tile 43QFC)</div>
+                            <div style="color:#64748b; font-size:10px;">March 2024 vs September 2024 · 24 Buildings</div>
+                        </div>
+                        <span style="color:#4ade80; font-size:11px; font-weight:600;">91% Conf</span>
+                    </div>
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="color:#fff; font-weight:600;">Flood Inundation: Brahmaputra Basin (RISAT-1A)</div>
+                            <div style="color:#64748b; font-size:10px;">Pre-Monsoon vs Post-Monsoon · 14.8 km² Inundation</div>
+                        </div>
+                        <span style="color:#4ade80; font-size:11px; font-weight:600;">95% Conf</span>
+                    </div>
+                    <div style="background:#091226; border:1px solid #1e3a6b; border-radius:8px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <div style="color:#fff; font-weight:600;">Deforestation Monitoring: Western Ghats</div>
+                            <div style="color:#64748b; font-size:10px;">Cartosat-2S & Sentinel-2 Fusion · -3.1 km² Canopy</div>
+                        </div>
+                        <span style="color:#4ade80; font-size:11px; font-weight:600;">89% Conf</span>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'settings') {
+            modalTitle.textContent = 'Engine & Algorithm Configuration';
+            modalContent.innerHTML = `
+                <div style="display:flex; flex-direction:column; gap:14px;">
+                    <div>
+                        <label style="color:#fff; font-weight:600; display:block; margin-bottom:4px;">STSF-Net Pseudo-Change Suppression Filter</label>
+                        <span style="color:#94a3b8; font-size:11px; display:block; margin-bottom:6px;">Eliminates false positives from seasonal illumination differences.</span>
+                        <input type="range" min="3" max="15" value="7" style="width:100%; accent-color:#0084ff;">
+                        <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b;">
+                            <span>3x3 Kernel</span>
+                            <span style="color:#00d2ff;">7x7 Kernel (Default)</span>
+                            <span>15x15 Kernel</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label style="color:#fff; font-weight:600; display:block; margin-bottom:4px;">Confidence Threshold Cutoff</label>
+                        <span style="color:#94a3b8; font-size:11px; display:block; margin-bottom:6px;">Filters polygon outputs with bimodal histogram confidence below cutoff.</span>
+                        <input type="range" min="50" max="99" value="90" style="width:100%; accent-color:#0084ff;">
+                        <div style="display:flex; justify-content:space-between; font-size:10px; color:#64748b;">
+                            <span>50% (Loose)</span>
+                            <span style="color:#00d2ff;">90% (ISRO SIH Standard)</span>
+                            <span>99% (Strict)</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    modalCloseBtn.addEventListener('click', () => {
+        modalBackdrop.classList.remove('active');
+        document.getElementById('tabWorkspace').click();
+    });
+
+    modalBackdrop.addEventListener('click', (e) => {
+        if (e.target === modalBackdrop) {
+            modalBackdrop.classList.remove('active');
+            document.getElementById('tabWorkspace').click();
+        }
+    });
+
+    // =========================================================================
+    // 11. TOAST NOTIFICATIONS
+    // =========================================================================
+    function showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast-msg';
+        toast.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="16" x2="12" y2="12"></line>
+                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <span>${escapeHtml(message)}</span>
+        `;
+        toastContainer.appendChild(toast);
+
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+            toast.style.transition = 'all 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 });

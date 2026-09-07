@@ -3,244 +3,905 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SatQuery AI — Agentic Earth Observation & Road Intelligence</title>
+    <title>SatQuery AI — Agentic Remote Sensing Copilot</title>
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide Icons or SVG icons inline -->
 </head>
-<body class="dark-theme">
+<body class="satquery-app">
 
     <!-- ================================================================= -->
-    <!-- 1. LANDING PAGE EXPERIENCE (Identical to Aryabhata-Cartographers)   -->
+    <!-- TOP GLOBAL HEADER BAR                                             -->
     <!-- ================================================================= -->
-    <div id="landingView" class="landing-view">
-        
-        <!-- 3D WebGL Earth Globe Mount -->
-        <div id="globeMount" class="globe-mount"></div>
+    <header class="app-top-header">
+        <!-- Left: Logo & Brand -->
+        <div class="header-brand">
+            <div class="logo-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M4.93 4.93a10 10 0 0 1 14.14 0"></path>
+                    <path d="M19.07 19.07a10 10 0 0 1-14.14 0"></path>
+                    <path d="M1 1l22 22"></path>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <h1 class="brand-title">SatQuery AI</h1>
+                <span class="brand-subtitle">Agentic Remote Sensing Copilot</span>
+            </div>
+        </div>
 
-        <!-- Scanline Grid Overlay -->
-        <div class="scanline-overlay"></div>
+        <!-- Center / Right: Navigation Tabs -->
+        <nav class="header-nav">
+            <button class="nav-tab active" data-tab="workspace" id="tabWorkspace">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"></rect>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"></rect>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"></rect>
+                </svg>
+                <span>Workspace</span>
+            </button>
+            <button class="nav-tab" data-tab="models" id="tabModels">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                </svg>
+                <span>Models</span>
+            </button>
+            <button class="nav-tab" data-tab="datasets" id="tabDatasets">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>Datasets</span>
+            </button>
+            <button class="nav-tab" data-tab="history" id="tabHistory">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>History</span>
+            </button>
+            <button class="nav-tab" data-tab="settings" id="tabSettings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                <span>Settings</span>
+            </button>
+            <div class="user-avatar-wrap" title="Vikram (Lead RS Engineer)">
+                <img src="textures/user_avatar.jpg" alt="User Profile" class="user-avatar-img">
+            </div>
+        </nav>
+    </header>
 
-        <!-- HUD Layer -->
-        <div class="hud-layer">
-            <!-- Top HUD Bar -->
-            <header class="landing-hud-header">
-                <button id="audioToggleBtn" class="audio-btn" type="button" aria-label="Toggle ambient audio">
-                    <span id="audioDot" class="audio-dot"></span>
-                    <span id="audioLabel">AUDIO OFF</span>
+    <!-- ================================================================= -->
+    <!-- MAIN WORKSPACE LAYOUT (3 COLUMNS)                                 -->
+    <!-- ================================================================= -->
+    <main class="workspace-layout" id="workspaceMain">
+
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <!-- 1. LEFT PANEL: CONVERSATION STREAM                           -->
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <section class="panel panel-conversation">
+            <div class="panel-header-row">
+                <h2 class="panel-title">Conversation</h2>
+                <button class="btn-new-chat" id="btnNewChat">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    <span>New Chat</span>
                 </button>
+            </div>
 
-                <span class="hud-brand">SATQUERY</span>
-
-                <span class="hud-status">SYS: <span id="sysStatus">STANDBY</span></span>
-            </header>
-
-            <!-- Scroll-driven Content Panels -->
-            <div class="panels-viewport">
-                <!-- Panel 0: Welcome Hero -->
-                <div id="panel0" class="story-panel panel-hero">
-                    <span class="hero-tag">■ SATQUERY AI · GEOSPATIAL INTELLIGENCE</span>
-                    <h1 class="hero-title">AI-Powered Satellite Road Intelligence</h1>
-                    <span class="hero-scroll-hint">SCROLL DOWN TO EXPLORE &darr;</span>
+            <!-- Scrollable Message List -->
+            <div class="conversation-messages" id="chatMessageList">
+                
+                <!-- Message 1 (User) -->
+                <div class="chat-item user-item">
+                    <div class="chat-avatar user-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble user-bubble">
+                            What changed between March and September?
+                        </div>
+                        <span class="chat-time">10:24 AM</span>
+                    </div>
                 </div>
 
-                <!-- Panel 1: Satellite Input (Left card) -->
-                <div id="panel1" class="story-panel panel-left card-glass">
-                    <span class="panel-step-tag orange-tag">01 / INPUT DATASET</span>
-                    <h2>Multispectral Feeds</h2>
-                    <p>Feed raw Sentinel-2 or Landsat imagery into the processing buffer, specifying geographical bounds to trace routes under regional topological limits.</p>
+                <!-- Message 2 (Assistant) -->
+                <div class="chat-item bot-item">
+                    <div class="chat-avatar bot-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4"></path>
+                            <line x1="8" y1="16" x2="8" y2="16"></line>
+                            <line x1="16" y1="16" x2="16" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble bot-bubble">
+                            <p class="summary-highlight">Urban expansion detected in northeast region.</p>
+                            <div class="findings-list">
+                                <span class="findings-title">Key findings:</span>
+                                <ul>
+                                    <li><span class="bullet-dot">•</span> 24 new buildings identified</li>
+                                    <li><span class="bullet-dot">•</span> 2.4 km² of new construction</li>
+                                    <li><span class="bullet-dot">•</span> 12.4% increase in built-up area</li>
+                                    <li><span class="bullet-dot">•</span> High confidence (91%)</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <span class="chat-time">10:24 AM</span>
+                    </div>
                 </div>
 
-                <!-- Panel 2: Deep Extraction (Right card) -->
-                <div id="panel2" class="story-panel panel-right card-glass">
-                    <span class="panel-step-tag cyan-tag">02 / NEURAL VISION</span>
-                    <h2>SegFormer Road Mask</h2>
-                    <p>Deep transformer segments pixel columns, identifying road pixels vs background cover to reconstruct corridors beneath tree occlusions and cloud shadows.</p>
+                <!-- Message 3 (User) -->
+                <div class="chat-item user-item">
+                    <div class="chat-avatar user-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble user-bubble">
+                            Highlight only new buildings.
+                        </div>
+                        <span class="chat-time">10:28 AM</span>
+                    </div>
                 </div>
 
-                <!-- Panel 3: Graph Simulation & Enter (Center card) -->
-                <div id="panel3" class="story-panel panel-center">
-                    <div class="card-glass center-card-box">
-                        <span class="panel-step-tag cyan-tag">03 / VULNERABILITY MODEL</span>
-                        <h2>Structural Criticality</h2>
-                        <p>Graph construction resolves intersections into nodes and segments into edges, ranking route bottlenecks via betweenness and closeness metrics.</p>
-                        <div class="enter-btn-wrap">
-                            <button id="btnEnterExperience" class="enter-btn" type="button">
-                                <span>ENTER CONSOLE</span>
-                                <span class="pulse-orange-dot"></span>
+                <!-- Message 4 (Assistant) -->
+                <div class="chat-item bot-item">
+                    <div class="chat-avatar bot-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4"></path>
+                            <line x1="8" y1="16" x2="8" y2="16"></line>
+                            <line x1="16" y1="16" x2="16" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble bot-bubble">
+                            24 buildings identified and highlighted in the right image.
+                        </div>
+                        <span class="chat-time">10:28 AM</span>
+                    </div>
+                </div>
+
+                <!-- Message 5 (User) -->
+                <div class="chat-item user-item">
+                    <div class="chat-avatar user-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble user-bubble">
+                            Show confidence &gt;90%.
+                        </div>
+                        <span class="chat-time">10:28 AM</span>
+                    </div>
+                </div>
+
+                <!-- Message 6 (Assistant with Thumbnail) -->
+                <div class="chat-item bot-item">
+                    <div class="chat-avatar bot-avatar">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                            <circle cx="12" cy="5" r="2"></circle>
+                            <path d="M12 7v4"></path>
+                            <line x1="8" y1="16" x2="8" y2="16"></line>
+                            <line x1="16" y1="16" x2="16" y2="16"></line>
+                        </svg>
+                    </div>
+                    <div class="chat-bubble-wrap">
+                        <div class="chat-bubble bot-bubble">
+                            <p>Showing 18 buildings with confidence &gt;90%.</p>
+                            <div class="chat-thumb-card" id="chatThumbCard" title="Click to zoom ROI in split viewer">
+                                <img src="textures/t2_september.jpg" alt="Detected Cluster Preview" class="chat-thumb-img">
+                                <div class="chat-thumb-overlay">
+                                    <div class="thumb-bounding-box"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <span class="chat-time">10:28 AM</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="conversation-input-box">
+                <form id="chatForm" class="chat-form">
+                    <div class="input-wrapper">
+                        <input type="text" id="chatInput" placeholder="Ask anything about satellite imagery..." autocomplete="off">
+                        <div class="input-actions-inside">
+                            <button type="button" class="icon-tool-btn" id="btnAttach" title="Attach GeoTIFF / Mask">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+                                </svg>
+                            </button>
+                            <button type="button" class="icon-tool-btn" id="btnMic" title="Voice Input">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                    <line x1="12" y1="19" x2="12" y2="23"></line>
+                                    <line x1="8" y1="23" x2="16" y2="23"></line>
+                                </svg>
+                            </button>
+                            <button type="submit" class="btn-send" id="btnSend" title="Send Query">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="22" y1="2" x2="11" y2="13"></line>
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                                </svg>
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
+                </form>
 
-            <!-- Bottom Storytelling HUD -->
-            <footer class="landing-hud-footer">
-                <div class="footer-blurb">
-                    Across 2026, SatQuery fused satellite, aerial, and street-level imagery to chart the unseen resilience of transportation networks.
-                </div>
-                <div class="footer-share" id="shareBtn">
-                    SHARE &#8599;
-                </div>
-            </footer>
-        </div>
-
-        <!-- Telemetry HUD Card (active during transition dive) -->
-        <div id="telemetryDrawer" class="telemetry-drawer">
-            <div class="telemetry-row">
-                <span>ORBITSCAN:</span>
-                <span id="telemetryStatus" class="telemetry-highlight">STANDBY</span>
-            </div>
-            <div class="telemetry-row">
-                <span>LOCATION:</span>
-                <span id="telemetryLocation">LOCAL CONSOLE</span>
-            </div>
-            <div class="telemetry-row coords-row" id="telemetryCoordsRow" style="display: none;">
-                <span>COORDINATES:</span>
-                <span id="telemetryCoords">0.00000°N, 0.00000°E</span>
-            </div>
-            <div class="telemetry-progress-track">
-                <div id="telemetryProgressBar" class="telemetry-progress-fill"></div>
-            </div>
-        </div>
-
-        <!-- Hidden Scroll Driver (360vh) -->
-        <div id="scrollDriver" class="scroll-driver">
-            <div class="scroll-spacer"></div>
-        </div>
-    </div>
-
-
-    <!-- ================================================================= -->
-    <!-- 2. COPILOT DASHBOARD & INVESTIGATION CONSOLE                       -->
-    <!-- ================================================================= -->
-    <div id="dashboardView" class="dashboard-view dashboard-hidden">
-        <header class="app-header">
-            <div class="logo-area">
-                <button id="btnBackToOrbit" class="orbit-back-btn" title="Return to 3D Orbit View">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M19 12H5M12 19l-7-7 7-7"/>
-                    </svg>
-                    <span>Orbit View</span>
-                </button>
-                <div class="logo-badge">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <path d="M12 3v18"></path>
-                        <path d="M3 12h18"></path>
-                        <circle cx="12" cy="12" r="4" fill="currentColor" opacity="0.3"></circle>
-                    </svg>
-                </div>
-                <div>
-                    <h1>SatQuery AI</h1>
-                    <span class="sub-tag">Agentic Remote-Sensing Intelligence Copilot · ISRO SIH26167</span>
-                </div>
-            </div>
-            <div class="header-status">
-                <span class="sensor-badge" id="sensorBadge">ISRO Earth-Observation Standard</span>
-                <span class="mode-badge" id="modeBadge">Active Mode: Heuristic / Auto</span>
-            </div>
-        </header>
-
-        <main class="app-layout">
-            <!-- Left Panel: Ingestion & Chat -->
-            <section class="chat-panel">
-                <div class="card upload-card">
-                    <h3>1. Ingestion & Co-Registration</h3>
-                    <div class="upload-dropzone" id="dropzone">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="chat-sub-actions">
+                    <button type="button" class="sub-action-btn" id="btnUploadImage">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        <p>Upload GeoTIFFs (Single, Bi-temporal, or Optical+SAR)</p>
-                        <span class="upload-hint">Auto-checks CRS, bounds overlap, and erodes warp border artifacts</span>
-                        <input type="file" id="fileInput" multiple accept=".tif,.tiff,.png,.jpg" style="display:none;">
+                        <span>Upload Image</span>
+                    </button>
+                    <input type="file" id="fileUploadInput" multiple accept=".tif,.tiff,.png,.jpg,.jpeg" style="display:none;">
+
+                    <button type="button" class="sub-action-btn primary-analyze" id="btnAnalyze">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <span>Analyze</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <!-- 2. CENTER PANEL: SATELLITE SPLIT VIEWER & REPORT              -->
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <section class="panel panel-center-map">
+            
+            <!-- Map Container Wrapper -->
+            <div class="map-view-wrapper" id="mapWrapper">
+
+                <!-- Floating Top Toolbar (Left) -->
+                <div class="map-toolbar-floating">
+                    <button class="tool-btn" id="toolCrosshair" title="Center Crosshair">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="22" y1="12" x2="18" y2="12"></line>
+                            <line x1="6" y1="12" x2="2" y2="12"></line>
+                            <line x1="12" y1="6" x2="12" y2="2"></line>
+                            <line x1="12" y1="22" x2="12" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button class="tool-btn with-label" id="toolZoom" title="Toggle Zoom Control">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            <line x1="11" y1="8" x2="11" y2="14"></line>
+                            <line x1="8" y1="11" x2="14" y2="11"></line>
+                        </svg>
+                        <span>Zoom</span>
+                    </button>
+                    <button class="tool-btn with-label active" id="toolLayers" title="Toggle Layers & Mask Overlays">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        <span>Layers</span>
+                    </button>
+
+                    <!-- Opacity Control -->
+                    <div class="opacity-slider-wrap">
+                        <span class="opacity-label">Opacity</span>
+                        <input type="range" min="0" max="100" value="75" class="opacity-range" id="opacitySlider">
+                        <span class="opacity-val" id="opacityVal">75%</span>
                     </div>
-                    <div class="validation-status" id="validationStatus">
-                        <span class="status-dot"></span> <span id="validationText">No imagery loaded. Using simulated Cartosat-2S & RISAT demo session.</span>
+
+                    <button class="tool-btn with-label" id="toolDrawRoi" title="Draw Region of Interest (ROI)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h4v2H6v2H4V4zm16 0h-4v2h2v2h2V4zM4 20h4v-2H6v-2H4v4zm16 0h-4v-2h2v-2h2v4z"></path>
+                        </svg>
+                        <span>Draw ROI</span>
+                    </button>
+
+                    <button class="tool-btn with-label" id="toolDownload" title="Download High-Res Imagery / GeoTIFF">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Download</span>
+                    </button>
+                </div>
+
+                <!-- Floating Metadata Card (Right) -->
+                <div class="map-meta-floating">
+                    <div class="meta-header-row">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="22" y1="12" x2="18" y2="12"></line>
+                            <line x1="6" y1="12" x2="2" y2="12"></line>
+                            <line x1="12" y1="6" x2="12" y2="2"></line>
+                            <line x1="12" y1="22" x2="12" y2="18"></line>
+                        </svg>
+                        <span class="meta-sensor-name">Sentinel-2</span>
+                    </div>
+                    <div class="meta-items-list">
+                        <div class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+                            <span>10m Resolution</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle></svg>
+                            <span>EPSG:4326</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                            <span>Tile: 43QFC</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path></svg>
+                            <span>Lat: 12.9716°</span>
+                        </div>
+                        <div class="meta-item">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a8 8 0 0 0-8 8c0 5.25 8 12 8 12s8-6.75 8-12a8 8 0 0 0-8-8z"></path></svg>
+                            <span>Lon: 77.5946°</span>
+                        </div>
                     </div>
                 </div>
 
-                <div class="card chat-card">
-                    <h3>2. Conversational Satellite Intelligence</h3>
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="message system-message">
-                            <strong>SatQuery Assistant:</strong> Welcome! Upload your satellite imagery or ask any Earth-observation question below.
-                        </div>
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <!-- SPLIT SATELLITE CANVAS / SWIPE CONTAINER                -->
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <div class="split-viewport" id="splitViewport">
+                    
+                    <!-- Under Layer: T2 (September 2024 - Right Side) -->
+                    <div class="image-layer t2-layer" id="layerSeptember">
+                        <img src="textures/t2_september.jpg" alt="T2 September Satellite" class="sat-ortho-img" id="imgT2">
+                        
+                        <!-- Glowing Vector Segmentation Polygons & Bounding Boxes -->
+                        <svg class="polygons-svg-overlay" id="polygonsOverlay" viewBox="0 0 1000 600" preserveAspectRatio="none">
+                            <defs>
+                                <filter id="glowEffect" x="-20%" y="-20%" width="140%" height="140%">
+                                    <feGaussianBlur stdDeviation="3" result="blur" />
+                                    <feMerge>
+                                        <feMergeNode in="blur" />
+                                        <feMergeNode in="SourceGraphic" />
+                                    </feMerge>
+                                </filter>
+                            </defs>
+
+                            <!-- 24 Highlighted Building Footprints & Construction Complexes -->
+                            <!-- Warehouse Big Complex 1 -->
+                            <polygon class="poly-building" points="220,130 388,205 358,255 210,185" data-id="B1" data-type="Commercial Warehouse" data-area="4,820 m²" data-conf="96.4%" />
+                            <polygon class="poly-building" points="248,65 310,95 295,130 232,100" data-id="B2" data-type="Office Logistics" data-area="1,450 m²" data-conf="95.1%" />
+                            <polygon class="poly-building" points="305,92 398,138 382,175 290,128" data-id="B3" data-type="Storage Wing" data-area="2,150 m²" data-conf="94.8%" />
+
+                            <!-- Residential Cluster (Left Upper Strip) -->
+                            <polygon class="poly-building" points="112,24 175,54 162,78 98,48" data-id="B4" data-type="Residential Block A" data-area="890 m²" data-conf="93.2%" />
+                            <polygon class="poly-building" points="168,48 226,76 215,98 158,70" data-id="B5" data-type="Residential Block B" data-area="820 m²" data-conf="94.0%" />
+                            <polygon class="poly-building" points="98,75 148,98 138,122 88,98" data-id="B6" data-type="Residential Block C" data-area="680 m²" data-conf="92.5%" />
+                            <polygon class="poly-building" points="135,95 198,125 186,150 125,120" data-id="B7" data-type="Residential Block D" data-area="910 m²" data-conf="91.8%" />
+                            <polygon class="poly-building" points="75,145 118,168 106,198 62,175" data-id="B8" data-type="Residential Block E" data-area="740 m²" data-conf="93.7%" />
+                            <polygon class="poly-building" points="118,162 178,192 165,215 106,185" data-id="B9" data-type="Residential Block F" data-area="850 m²" data-conf="90.9%" />
+                            <polygon class="poly-building" points="58,205 98,225 85,252 45,232" data-id="B10" data-type="Residential Block G" data-area="620 m²" data-conf="94.1%" />
+                            <polygon class="poly-building" points="115,220 162,245 150,270 102,245" data-id="B11" data-type="Residential Block H" data-area="710 m²" data-conf="92.0%" />
+                            <polygon class="poly-building" points="48,255 86,275 75,302 38,282" data-id="B12" data-type="Residential Block I" data-area="590 m²" data-conf="91.2%" />
+
+                            <!-- Foundation Under Construction 1 & 2 -->
+                            <polygon class="poly-building" points="180,225 258,262 238,300 160,262" data-id="B13" data-type="Excavation / Concrete Slab" data-area="1,850 m²" data-conf="95.6%" />
+                            <polygon class="poly-building" points="248,348 322,382 300,422 228,388" data-id="B14" data-type="Building Foundation" data-area="1,420 m²" data-conf="93.8%" />
+                            <polygon class="poly-building" points="340,285 415,320 395,358 322,322" data-id="B15" data-type="Urban Infill Site A" data-area="1,680 m²" data-conf="92.4%" />
+                            <polygon class="poly-building" points="398,310 452,335 438,365 385,340" data-id="B16" data-type="Urban Infill Site B" data-area="980 m²" data-conf="91.5%" />
+
+                            <!-- Northeast Expansion Subdivisions -->
+                            <polygon class="poly-building" points="550,165 590,185 578,210 538,190" data-id="B17" data-type="Suburban Villa #1" data-area="480 m²" data-conf="93.0%" />
+                            <polygon class="poly-building" points="568,205 588,215 580,230 560,220" data-id="B18" data-type="Suburban Villa #2" data-area="320 m²" data-conf="92.1%" />
+                            <polygon class="poly-building" points="475,310 522,332 510,358 462,335" data-id="B19" data-type="Commercial Retail" data-area="780 m²" data-conf="94.5%" />
+                            <polygon class="poly-building" points="630,305 655,318 645,338 620,325" data-id="B20" data-type="Outbuilding #1" data-area="310 m²" data-conf="90.8%" />
+                            <polygon class="poly-building" points="720,220 748,235 738,252 710,238" data-id="B21" data-type="Outbuilding #2" data-area="290 m²" data-conf="91.4%" />
+                            <polygon class="poly-building" points="785,190 820,208 808,228 772,210" data-id="B22" data-type="New Farmhouse" data-area="460 m²" data-conf="93.5%" />
+                            <polygon class="poly-building" points="590,410 610,420 602,435 582,425" data-id="B23" data-type="Substation" data-area="260 m²" data-conf="92.2%" />
+                            <polygon class="poly-building" points="585,488 608,500 598,518 575,505" data-id="B24" data-type="Structure Delta" data-area="350 m²" data-conf="95.0%" />
+
+                            <!-- New Road Corridors -->
+                            <polygon class="poly-road" points="160,88 230,122 215,138 145,102" data-id="R1" data-type="Paved Access Spur" data-area="1,120 m²" data-conf="94.7%" />
+                            <polygon class="poly-road" points="215,260 260,370 248,375 202,268" data-id="R2" data-type="Construction Arterial" data-area="1,680 m²" data-conf="93.9%" />
+                        </svg>
+
+                        <div class="time-badge time-badge-t2">T2 - September 2024</div>
                     </div>
 
-                    <form id="queryForm" class="query-form">
-                        <input type="text" id="queryInput" placeholder="e.g. 'Use optical and SAR to identify flood inundation and new buildings'" required>
-                        <button type="submit" id="submitBtn">
-                            <span>Investigate</span>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"></line>
-                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    <!-- Top Clipped Layer: T1 (March 2024 - Left Side) -->
+                    <div class="image-layer t1-layer" id="layerMarch">
+                        <img src="textures/t1_march.jpg" alt="T1 March Satellite" class="sat-ortho-img" id="imgT1">
+                        <div class="time-badge time-badge-t1">T1 - March 2024</div>
+                    </div>
+
+                    <!-- Vertical Interactive Split Slider Divider -->
+                    <div class="split-divider-line" id="splitDivider">
+                        <div class="split-handle-knob" id="splitHandle" title="Drag to compare March vs September">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="15 18 9 12 15 6"></polyline>
                             </svg>
-                        </button>
-                    </form>
-
-                    <div class="quick-prompts">
-                        <button class="pill-btn" onclick="setPrompt('Describe the land cover and major objects visible in this image.')">Describe Land Cover</button>
-                        <button class="pill-btn" onclick="setPrompt('What changed between T1 and T2? Suppress seasonal pseudo-changes.')">Bi-Temporal Change</button>
-                        <button class="pill-btn" onclick="setPrompt('Assess ground inundation with SAR microwave penetration through cloud cover.')">Optical + SAR Fusion</button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Center Panel: Map & Comparison Slider -->
-            <section class="map-panel card">
-                <div class="panel-header">
-                    <h3>Visual Evidence & Grounded Overlays</h3>
-                    <div class="map-controls">
-                        <button class="toggle-btn active" id="btnOverlay">Mask Overlays</button>
-                        <button class="toggle-btn" id="btnSlider">Before/After Slider</button>
-                    </div>
-                </div>
-                
-                <div id="mapContainer" class="map-container">
-                    <div class="simulated-map" id="simulatedMap">
-                        <div class="map-layer optical-layer" id="layerT1">
-                            <div class="water-box" id="waterOverlay"></div>
-                            <div class="change-box" id="changeOverlay"></div>
-                            <div class="urban-box" id="urbanOverlay"></div>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                            </svg>
                         </div>
-                        <div class="map-slider-handle" id="sliderHandle"></div>
+                    </div>
+
+                    <!-- Bottom-Left Map Scale Overlay -->
+                    <div class="map-scale-overlay">
+                        <div class="scale-bar-track">
+                            <span class="scale-text">200 m</span>
+                            <div class="scale-ruler-line"></div>
+                        </div>
+                        <div class="compass-north">
+                            <span class="compass-n">N</span>
+                            <svg width="10" height="12" viewBox="0 0 10 12" fill="currentColor">
+                                <polygon points="5,0 10,12 5,9 0,12"></polygon>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Floating Tooltip for Polygon Inspection -->
+                    <div class="poly-tooltip" id="polyTooltip"></div>
+
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <!-- BOTTOM TIMELINE SCRUBBER BAR                            -->
+                <!-- ═══════════════════════════════════════════════════════ -->
+                <div class="timeline-bar-container">
+                    <div class="timeline-track-wrap">
+                        <div class="timeline-months-row">
+                            <div class="month-node" data-month="1">Jan</div>
+                            <div class="month-node" data-month="2">Feb</div>
+                            <div class="month-node active-t1" data-month="3" id="monthMar">
+                                <span class="month-label">Mar</span>
+                                <span class="active-dot"></span>
+                            </div>
+                            <div class="month-node" data-month="4">Apr</div>
+                            <div class="month-node" data-month="5">May</div>
+                            <div class="month-node" data-month="6">Jun</div>
+                            <div class="month-node" data-month="7">Jul</div>
+                            <div class="month-node" data-month="8">Aug</div>
+                            <div class="month-node active-t2" data-month="9" id="monthSep">
+                                <span class="month-label">Sep</span>
+                                <span class="active-dot"></span>
+                            </div>
+                            <div class="month-node" data-month="10">Oct</div>
+                            <div class="month-node" data-month="11">Nov</div>
+                            <div class="month-node" data-month="12">Dec</div>
+                        </div>
+                        <div class="timeline-range-connector" id="timelineConnector"></div>
+                    </div>
+
+                    <div class="timeline-status-info">
+                        <span class="comparison-title">Current comparison:</span>
+                        <div class="comparison-badge" id="comparisonBadge">
+                            <strong>March ↔ September</strong>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
                     </div>
                 </div>
 
-                <div class="export-bar">
-                    <div class="hash-display">
-                        <span class="hash-label">Run Signature (SHA-256):</span>
-                        <span class="hash-val" id="sigHash">e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</span>
-                    </div>
-                    <div class="export-actions">
-                        <button class="export-btn" id="btnExportPdf">Export PDF Report</button>
-                        <button class="export-btn secondary" id="btnExportGeoJson">Export GeoJSON</button>
-                    </div>
-                </div>
-            </section>
+            </div>
 
-            <!-- Right Panel: ReAct Investigation Trace Drawer -->
-            <aside class="trace-panel card">
-                <div class="panel-header">
-                    <h3>Auditable Investigation Trace</h3>
-                    <span class="badge-confidence" id="finalConfidence">Confidence: --%</span>
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <!-- BOTTOM AI GENERATED REPORT CARD                             -->
+            <!-- ═══════════════════════════════════════════════════════════ -->
+            <div class="ai-report-card">
+                <div class="report-icon-box">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="16" y1="13" x2="8" y2="13"></line>
+                        <line x1="16" y1="17" x2="8" y2="17"></line>
+                        <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
                 </div>
-                <p class="trace-sub">Step-by-step ReAct thought, tool selection rationale, and observation evidence.</p>
-                
-                <div class="trace-steps" id="traceSteps">
-                    <div class="trace-empty">No active query execution trace. Ask a question to view real-time ReAct planning.</div>
+
+                <div class="report-content-body">
+                    <h3 class="report-heading">AI Generated Report</h3>
+                    <p class="report-text" id="reportParagraph">
+                        Comparison between March and September imagery detected a 12.4% increase in urban development concentrated in the northeast quadrant. Twenty-four newly constructed buildings were identified with high confidence. No significant vegetation loss was observed.
+                    </p>
                 </div>
-            </aside>
-        </main>
+
+                <div class="report-actions-row">
+                    <button class="btn-report-action outline" id="btnExportPdf">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span>Export PDF</span>
+                    </button>
+                    <button class="btn-report-action outline" id="btnExportGeoJson">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        <span>Export GeoJSON</span>
+                    </button>
+                    <button class="btn-report-action primary" id="btnGenerateReport">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                        </svg>
+                        <span>Generate Report</span>
+                    </button>
+                    <button class="btn-report-action outline" id="btnShareReport">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="18" cy="5" r="3"></circle>
+                            <circle cx="6" cy="12" r="3"></circle>
+                            <circle cx="18" cy="19" r="3"></circle>
+                            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                        </svg>
+                        <span>Share</span>
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <!-- 3. RIGHT PANEL: AGENT PLANNER, MODELS & EVIDENCE             -->
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <section class="panel panel-analytics">
+
+            <!-- Card 1: Agent Planner -->
+            <div class="analytics-card card-planner">
+                <div class="analytics-card-header">
+                    <div class="header-title-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-accent">
+                            <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                        </svg>
+                        <h3>Agent Planner</h3>
+                    </div>
+                </div>
+
+                <div class="planner-steps-list" id="plannerSteps">
+                    <div class="planner-step-row step-done">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span class="step-name">Understand Query</span>
+                        </div>
+                        <span class="step-badge badge-completed">Completed</span>
+                    </div>
+
+                    <div class="planner-step-row step-done">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span class="step-name">Select Models</span>
+                        </div>
+                        <span class="step-badge badge-completed">Completed</span>
+                    </div>
+
+                    <div class="planner-step-row step-done">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span class="step-name">Register Images</span>
+                        </div>
+                        <span class="step-badge badge-completed">Completed</span>
+                    </div>
+
+                    <div class="planner-step-row step-done">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span class="step-name">Detect Changes</span>
+                        </div>
+                        <span class="step-badge badge-completed">Completed</span>
+                    </div>
+
+                    <div class="planner-step-row step-running">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge running">
+                                <span class="dot-pulse"></span>
+                            </span>
+                            <span class="step-name">Ground Objects</span>
+                        </div>
+                        <span class="step-badge badge-running">● Running</span>
+                    </div>
+
+                    <div class="planner-step-row step-pending">
+                        <div class="step-label-group">
+                            <span class="step-icon-badge pending">
+                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"></circle>
+                            </span>
+                            <span class="step-name">Generate Explanation</span>
+                        </div>
+                        <span class="step-badge badge-pending">Pending</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card 2: Models Used (6/6) -->
+            <div class="analytics-card card-models">
+                <div class="analytics-card-header">
+                    <div class="header-title-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-accent">
+                            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                            <polyline points="2 17 12 22 22 17"></polyline>
+                            <polyline points="2 12 12 17 22 12"></polyline>
+                        </svg>
+                        <h3>Models Used</h3>
+                    </div>
+                    <span class="models-count-tag">6/6</span>
+                </div>
+
+                <div class="models-grid">
+                    
+                    <!-- 1. InternVL 3 -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-blue">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="3" width="20" height="14" rx="2"></rect>
+                                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">InternVL 3</h4>
+                                <span class="model-status status-running">● Running</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 12.4s</span>
+                            <span class="metric-text">Conf: 94.2%</span>
+                        </div>
+                    </div>
+
+                    <!-- 2. Florence-2 -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-cyan">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">Florence-2</h4>
+                                <span class="model-status status-completed">✓ Completed</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 8.7s</span>
+                            <span class="metric-text">Conf: 91.3%</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. SAM2 -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-teal">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polygon points="12 8 8 12 12 16 16 12 12 8"></polygon>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">SAM2</h4>
+                                <span class="model-status status-completed">✓ Completed</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 6.1s</span>
+                            <span class="metric-text">Conf: 89.7%</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. GroundingDINO -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-indigo">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">GroundingDINO</h4>
+                                <span class="model-status status-running">● Running</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 9.8s</span>
+                            <span class="metric-text">Conf: 93.6%</span>
+                        </div>
+                    </div>
+
+                    <!-- 5. ChangeStar -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-orange">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">ChangeStar</h4>
+                                <span class="model-status status-completed">✓ Completed</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 14.2s</span>
+                            <span class="metric-text">Conf: 92.8%</span>
+                        </div>
+                    </div>
+
+                    <!-- 6. Segment Anything -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-purple">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="4"></rect>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">Segment Anything</h4>
+                                <span class="model-status status-completed">✓ Completed</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Latency: 7.6s</span>
+                            <span class="metric-text">Conf: 90.5%</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Card 3: Evidence (Urban Expansion) -->
+            <div class="analytics-card card-evidence">
+                <div class="analytics-card-header">
+                    <div class="header-title-wrap">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-accent">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                        <h3>Evidence</h3>
+                    </div>
+                    <span class="topic-tag">Urban Expansion</span>
+                </div>
+
+                <!-- Circular Gauge & High-Level Statistics -->
+                <div class="evidence-stats-grid">
+                    
+                    <!-- Circular Donut Progress Meter -->
+                    <div class="gauge-column">
+                        <div class="donut-chart-wrap">
+                            <svg class="donut-svg" viewBox="0 0 100 100">
+                                <circle class="donut-bg-ring" cx="50" cy="50" r="40"></circle>
+                                <circle class="donut-fill-ring" cx="50" cy="50" r="40" stroke-dasharray="251.2" stroke-dashoffset="22.6"></circle>
+                            </svg>
+                            <div class="donut-center-text">
+                                <span class="donut-number">91%</span>
+                            </div>
+                        </div>
+                        <span class="gauge-sublabel">Confidence</span>
+                    </div>
+
+                    <!-- Metrics Stats -->
+                    <div class="stats-column">
+                        <div class="stat-unit">
+                            <span class="stat-label">Detected Area</span>
+                            <span class="stat-val font-accent">2.4 km²</span>
+                        </div>
+                        <div class="stat-unit">
+                            <span class="stat-label">Objects</span>
+                            <div class="stat-objects-list">
+                                <div class="obj-item">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect></svg>
+                                    <span>24 buildings</span>
+                                </div>
+                                <div class="obj-item">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19h16M4 5h16M12 5v14"></path></svg>
+                                    <span>2 roads</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Key Evidence Accordion List -->
+                <div class="key-evidence-box">
+                    <div class="key-evidence-header" id="evidenceHeader">
+                        <span class="key-evidence-title">Key Evidence</span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="caret-icon">
+                            <polyline points="18 15 12 9 6 15"></polyline>
+                        </svg>
+                    </div>
+                    <ul class="evidence-points-list" id="evidenceList">
+                        <li>
+                            <span class="check-icon">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span>Detected new impervious surfaces.</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span>Confirmed by segmentation mask.</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                            </span>
+                            <span>High confidence from VLM grounding.</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ================================================================= -->
+    <!-- MODAL OVERLAYS FOR NAVIGATION TABS (Models, Datasets, History, Settings) -->
+    <!-- ================================================================= -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal-dialog" id="modalDialog">
+            <div class="modal-header">
+                <h2 id="modalTitle">Models Catalog</h2>
+                <button class="modal-close-btn" id="modalCloseBtn">&times;</button>
+            </div>
+            <div class="modal-body" id="modalContent">
+                <!-- Injected dynamically based on selected tab -->
+            </div>
+        </div>
     </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Toast Notification Banner -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Core Script -->
     <script src="app.js"></script>
 </body>
 </html>
