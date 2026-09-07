@@ -109,3 +109,11 @@ def test_trace_endpoint():
     # Verify trace endpoint for a dummy job
     resp = client.get("/api/v1/jobs/dummy_job_999/trace")
     assert resp.status_code == 404
+
+
+def test_pdf_export_endpoint():
+    resp = client.get("/api/v1/jobs/DEMO-ACT2/pdf")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"] in ("application/pdf", "application/json")
+    assert len(resp.content) > 0
+
