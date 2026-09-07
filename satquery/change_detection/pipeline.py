@@ -375,6 +375,7 @@ class ChangeDetector:
         t0 = time.perf_counter()
         model_status_val = ModelStatus.CLASSICAL_ALGORITHM.value
         model_provenance: dict[str, Any] = {}
+        inference_path: str = "CLASSICAL_ONLY"
 
         if self.model_name in ("changeformer", "changeformer_v2"):
             try:
@@ -383,6 +384,16 @@ class ChangeDetector:
                 model_status_val = pred.model_status.value
                 model_provenance = pred.provenance
                 raw_mask = pred.change_mask
+
+                if pred.is_fallback:
+                    inference_path = "HEURISTIC_FALLBACK"
+                    fallback_warning = pred.fallback_reason or f"Learned model '{self.model_name}' fell back to classical baseline."
+                    warnings.append(fallback_warning)
+                elif pred.model_status == ModelStatus.REAL_MODEL:
+                    inference_path = "LEARNED_MODEL"
+                else:
+                    inference_path = "CLASSICAL_ONLY"
+
                 # Classical cross-check baseline
                 det = detect_changes(
                     idx_t1, idx_t2,
@@ -398,7 +409,9 @@ class ChangeDetector:
                 )
                 raw_mask = det["change_mask"]
                 model_status_val = ModelStatus.HEURISTIC_FALLBACK.value
+                inference_path = "HEURISTIC_FALLBACK"
                 model_provenance = {"fallback_reason": str(exc)}
+                warnings.append(f"Learned model '{self.model_name}' failed ({exc}); visibly fell back to classical baseline.")
         else:
             det = detect_changes(
                 idx_t1, idx_t2,
@@ -407,6 +420,7 @@ class ChangeDetector:
             )
             raw_mask = det["change_mask"]
             model_status_val = ModelStatus.CLASSICAL_ALGORITHM.value
+            inference_path = "CLASSICAL_ONLY"
             model_provenance = {"algorithm": "STSF-Otsu-SpectralDiff"}
 
         trace.append(_trace_step(
@@ -460,9 +474,11 @@ class ChangeDetector:
         t0 = time.perf_counter()
         area_metrics = compute_area(cleaned_mask, raster_t1.transform)
         signed_diff  = det["signed_diff"]
-        direction    = classify_change_direction(
+        direction_info = classify_change_direction(
             signed_diff, cleaned_mask, primary_index
         )
+        direction = str(direction_info)
+        direction_provenance = direction_info.to_dict()
         summary_text = build_text_summary(
             area_metrics, direction, primary_index, n_regions,
             timestamp_t1, timestamp_t2,
@@ -529,6 +545,8 @@ class ChangeDetector:
         result: dict[str, Any] = {
             # GeoCV Lead Charter Section 6 core contract
             "change_type":           direction,
+            "change_type_provenance": direction_provenance,
+            "inference_path":        inference_path,
             "confidence":            conf_score,
             "changed_area_m2":       float(area_metrics["area_m2"]),
             "changed_area_ha":       float(area_metrics["area_ha"]),
@@ -537,7 +555,11 @@ class ChangeDetector:
             "supporting_evidence": {
                 "model_name":         self.model_name,
                 "model_status":       model_status_val,
+                "inference_path":     inference_path,
+                "is_fallback":        (inference_path == "HEURISTIC_FALLBACK"),
+                "fallback_reason":    model_provenance.get("fallback_reason"),
                 "spectral_index":     primary_index,
+                "change_type_provenance": direction_provenance,
                 "otsu_threshold":     round(float(det["otsu_threshold"]), 5),
                 "n_pseudo_removed":   int(det["n_pseudo_removed"]),
                 "bimodal_separation": round(float(conf_score), 4),

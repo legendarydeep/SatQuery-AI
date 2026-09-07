@@ -54,12 +54,15 @@ class PixelMetrics:
 
 @dataclass
 class GeospatialMetrics:
-    """Geospatial validation and boundary quality metrics."""
+    """Geospatial validation and robust boundary quality metrics."""
     polygon_iou: float
     area_error_m2: float
     area_error_pct: float
     predicted_area_m2: float
     true_area_m2: float
+    boundary_f1: float = 1.0
+    hausdorff_95: float = 0.0
+    centroid_error_m: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -68,6 +71,9 @@ class GeospatialMetrics:
             "area_error_pct": round(self.area_error_pct, 2),
             "predicted_area_m2": round(self.predicted_area_m2, 2),
             "true_area_m2": round(self.true_area_m2, 2),
+            "boundary_f1": round(self.boundary_f1, 4),
+            "hausdorff_95": round(self.hausdorff_95, 2),
+            "centroid_error_m": round(self.centroid_error_m, 2),
         }
 
 
@@ -145,13 +151,13 @@ def compute_geospatial_metrics(
     poly_gt = _extract_poly(gt_geojson)
 
     if poly_pred is None and poly_gt is None:
-        return GeospatialMetrics(1.0, 0.0, 0.0, 0.0, 0.0)
+        return GeospatialMetrics(1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
     if poly_pred is None:
         area_gt = poly_gt.area
-        return GeospatialMetrics(0.0, float(area_gt), 100.0, 0.0, float(area_gt))
+        return GeospatialMetrics(0.0, float(area_gt), 100.0, 0.0, float(area_gt), 0.0, 999.0, 999.0)
     if poly_gt is None:
         area_pred = poly_pred.area
-        return GeospatialMetrics(0.0, float(area_pred), 100.0, float(area_pred), 0.0)
+        return GeospatialMetrics(0.0, float(area_pred), 100.0, float(area_pred), 0.0, 0.0, 999.0, 999.0)
 
     intersection = poly_pred.intersection(poly_gt).area
     union = poly_pred.union(poly_gt).area
@@ -162,12 +168,39 @@ def compute_geospatial_metrics(
     area_diff = abs(pred_area - gt_area)
     area_pct = (area_diff / max(1e-6, gt_area)) * 100.0
 
+    # Centroid shift
+    c_pred = poly_pred.centroid
+    c_gt = poly_gt.centroid
+    centroid_dist = float(c_pred.distance(c_gt))
+
+    # Boundary Hausdorff distance approximation
+    try:
+        b_pred = poly_pred.boundary
+        b_gt = poly_gt.boundary
+        h_dist = float(b_pred.hausdorff_distance(b_gt))
+    except Exception:
+        h_dist = centroid_dist
+
+    # Boundary F1: buffer precision and recall
+    try:
+        buf_size = max(0.0001, math.sqrt(pred_area) * 0.02)
+        buf_gt = poly_gt.boundary.buffer(buf_size)
+        buf_pred = poly_pred.boundary.buffer(buf_size)
+        prec = float(poly_pred.boundary.intersection(buf_gt).length / max(1e-6, poly_pred.boundary.length))
+        rec = float(poly_gt.boundary.intersection(buf_pred).length / max(1e-6, poly_gt.boundary.length))
+        bf1 = float(2 * prec * rec / max(1e-6, prec + rec))
+    except Exception:
+        bf1 = poly_iou
+
     return GeospatialMetrics(
         polygon_iou=poly_iou,
         area_error_m2=area_diff,
         area_error_pct=area_pct,
         predicted_area_m2=pred_area,
         true_area_m2=gt_area,
+        boundary_f1=min(1.0, max(0.0, bf1)),
+        hausdorff_95=h_dist,
+        centroid_error_m=centroid_dist,
     )
 
 

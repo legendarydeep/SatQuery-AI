@@ -47,6 +47,59 @@ ChangeLabel = Literal[
 _MIN_CHANGED_FRACTION = 0.001   # 0.1 %
 
 
+class ChangeClassification(str):
+    """
+    Semantic change classification label with full provenance tracking.
+    Inherits from str for seamless backward compatibility with all label equality checks,
+    while carrying provenance metadata (classification_method, evidence, confidence).
+    """
+    change_type: str
+    classification_method: str
+    classification_evidence: list[str]
+    classification_confidence: float
+
+    def __new__(
+        cls,
+        label: str,
+        classification_method: str = "spectral_rule",
+        classification_evidence: list[str] | None = None,
+        classification_confidence: float = 1.0,
+    ):
+        obj = super().__new__(cls, label)
+        obj.change_type = label
+        obj.classification_method = classification_method
+        obj.classification_evidence = classification_evidence or []
+        obj.classification_confidence = round(float(classification_confidence), 4)
+        return obj
+
+    def __getitem__(self, item: Any) -> Any:
+        if isinstance(item, str):
+            if item == "change_type":
+                return self.change_type
+            elif item == "classification_method":
+                return self.classification_method
+            elif item == "classification_evidence":
+                return self.classification_evidence
+            elif item == "classification_confidence":
+                return self.classification_confidence
+            raise KeyError(item)
+        return super().__getitem__(item)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "change_type": self.change_type,
+            "classification_method": self.classification_method,
+            "classification_evidence": self.classification_evidence,
+            "classification_confidence": self.classification_confidence,
+        }
+
+
 # ---------------------------------------------------------------------------
 # Area calculation
 # ---------------------------------------------------------------------------
@@ -110,7 +163,7 @@ def classify_change_direction(
     primary_index: str = "ndvi",
     signed_diff_secondary: np.ndarray | None = None,
     secondary_index: str | None = None,
-) -> ChangeLabel:
+) -> ChangeClassification:
     """
     Classify the dominant direction of change over the changed pixels.
 
@@ -125,60 +178,110 @@ def classify_change_direction(
 
     Returns
     -------
-    ChangeLabel string.
+    ChangeClassification (subclass of str) containing label, classification_method,
+    classification_evidence, and classification_confidence.
     """
     pct_changed = change_mask.sum() / max(change_mask.size, 1)
     if pct_changed < _MIN_CHANGED_FRACTION:
-        return "no_change"
+        return ChangeClassification(
+            "no_change",
+            classification_method="spectral_rule",
+            classification_evidence=["change_area_fraction_below_threshold"],
+            classification_confidence=1.0,
+        )
 
     # Mean signed change within the change mask
     changed_pixels = signed_diff_primary[change_mask]
     if changed_pixels.size == 0:
-        return "no_change"
+        return ChangeClassification(
+            "no_change",
+            classification_method="spectral_rule",
+            classification_evidence=["zero_changed_pixels"],
+            classification_confidence=1.0,
+        )
 
     mean_delta = float(np.median(changed_pixels))  # median is more robust than mean
-
-    label = _classify_single_index(primary_index, mean_delta)
+    label, evidence, confidence = _classify_single_index_with_evidence(primary_index, mean_delta)
 
     # Cross-check with secondary index if available
     if signed_diff_secondary is not None and secondary_index is not None:
-        sec_pixels   = signed_diff_secondary[change_mask]
-        sec_mean     = float(np.median(sec_pixels))
-        sec_label    = _classify_single_index(secondary_index, sec_mean)
+        sec_pixels = signed_diff_secondary[change_mask]
+        if sec_pixels.size > 0:
+            sec_mean = float(np.median(sec_pixels))
+            sec_label, sec_evidence, sec_conf = _classify_single_index_with_evidence(secondary_index, sec_mean)
+            evidence.extend(sec_evidence)
 
-        if sec_label != label and sec_label != "no_change":
-            # Contradicting signals — flag as mixed
-            logger.debug(
-                "Mixed change: primary=%s (%s) vs secondary=%s (%s)",
-                primary_index, label, secondary_index, sec_label,
-            )
-            return "mixed_change"
+            if sec_label != label and sec_label != "no_change":
+                # Contradicting signals — flag as mixed
+                logger.debug(
+                    "Mixed change: primary=%s (%s) vs secondary=%s (%s)",
+                    primary_index, label, secondary_index, sec_label,
+                )
+                label = "mixed_change"
+                confidence = round((confidence + sec_conf) / 2.0 * 0.75, 4)
 
-    return label
+    return ChangeClassification(
+        label,
+        classification_method="spectral_rule",
+        classification_evidence=evidence,
+        classification_confidence=confidence,
+    )
+
+
+def classify_change_with_provenance(
+    signed_diff_primary: np.ndarray,
+    change_mask: np.ndarray,
+    primary_index: str = "ndvi",
+    signed_diff_secondary: np.ndarray | None = None,
+    secondary_index: str | None = None,
+) -> dict[str, Any]:
+    """Convenience helper returning the classification provenance dictionary."""
+    return classify_change_direction(
+        signed_diff_primary=signed_diff_primary,
+        change_mask=change_mask,
+        primary_index=primary_index,
+        signed_diff_secondary=signed_diff_secondary,
+        secondary_index=secondary_index,
+    ).to_dict()
+
+
+def _classify_single_index_with_evidence(
+    index_name: str, mean_delta: float
+) -> tuple[ChangeLabel, list[str], float]:
+    """Map (index, direction) to (ChangeLabel, evidence_list, confidence)."""
+    idx = index_name.lower()
+    delta_threshold = 0.02
+
+    if abs(mean_delta) < delta_threshold:
+        return "no_change", [f"{idx.upper()}_insignificant_delta ({mean_delta:+.4f})"], 0.5
+
+    conf = min(1.0, round(float(abs(mean_delta) / 0.20), 4))
+    conf = max(0.5, conf)
+
+    if idx == "ndvi":
+        if mean_delta > 0:
+            return "vegetation_gain", [f"NDVI_increase (median_delta={mean_delta:+.4f})"], conf
+        return "vegetation_loss", [f"NDVI_decrease (median_delta={mean_delta:+.4f})"], conf
+
+    if idx == "ndwi":
+        if mean_delta > 0:
+            return "water_expansion", [f"NDWI_increase (median_delta={mean_delta:+.4f})"], conf
+        return "water_contraction", [f"NDWI_decrease (median_delta={mean_delta:+.4f})"], conf
+
+    if idx == "ndbi":
+        if mean_delta > 0:
+            return "urban_growth", [f"NDBI_increase (median_delta={mean_delta:+.4f})"], conf
+        return "vegetation_gain", [f"NDBI_decrease (median_delta={mean_delta:+.4f})"], conf
+
+    if idx in ("rvi", "db_vv", "db_vh"):
+        return "sar_change", [f"SAR_{idx.upper()}_backscatter_shift (median_delta={mean_delta:+.4f})"], conf
+
+    return "mixed_change", [f"generic_spectral_shift ({idx.upper()} delta={mean_delta:+.4f})"], 0.6
 
 
 def _classify_single_index(index_name: str, mean_delta: float) -> ChangeLabel:
     """Map (index, direction) to a semantic ChangeLabel."""
-    idx = index_name.lower()
-    delta_threshold = 0.02  # minimum mean delta to claim directional change
-
-    if abs(mean_delta) < delta_threshold:
-        return "no_change"
-
-    if idx == "ndvi":
-        return "vegetation_gain" if mean_delta > 0 else "vegetation_loss"
-
-    if idx == "ndwi":
-        return "water_expansion" if mean_delta > 0 else "water_contraction"
-
-    if idx == "ndbi":
-        # NDBI increase → more built-up surface
-        return "urban_growth" if mean_delta > 0 else "vegetation_gain"
-
-    if idx in ("rvi", "db_vv", "db_vh"):
-        return "sar_change"
-
-    return "mixed_change"
+    return _classify_single_index_with_evidence(index_name, mean_delta)[0]
 
 
 # ---------------------------------------------------------------------------

@@ -16,15 +16,43 @@ from satquery.evaluation.schemas import EvaluationRecord, ConfidenceBreakdown
 from satquery.evaluation.adapters import ChangeDetectionAdapter
 
 
-VALID_STATUS_LABELS = {
-    "real_model",
-    "domain_adapted_model",
-    "classical_algorithm",
-    "heuristic_fallback",
-    "mock",
-    "unavailable",
-    "failed",
-}
+from satquery.change_detection.models.base import (
+    ModelStatus,
+    ModelArtifactStatus,
+    RuntimeStatus,
+    ValidationStatus,
+)
+
+# Derive status labels directly from authoritative enums
+VALID_MODEL_STATUS_LABELS = {s.value for s in ModelStatus} | {"mock", "failed"}
+VALID_ARTIFACT_STATUS_LABELS = {s.value for s in ModelArtifactStatus}
+VALID_RUNTIME_STATUS_LABELS = {s.value for s in RuntimeStatus}
+VALID_VALIDATION_STATUS_LABELS = {s.value for s in ValidationStatus}
+
+# Comprehensive set of accepted status labels for EvaluationRecord
+VALID_STATUS_LABELS = VALID_MODEL_STATUS_LABELS | VALID_ARTIFACT_STATUS_LABELS
+
+
+def verify_tri_axis_status(
+    artifact_status: str,
+    runtime_status: str,
+    validation_status: str,
+) -> List[str]:
+    """Validates the three orthogonal axes of model provenance independently."""
+    errors = []
+    if artifact_status not in VALID_ARTIFACT_STATUS_LABELS:
+        errors.append(
+            f"Invalid artifact_status '{artifact_status}'. Must be one of {sorted(VALID_ARTIFACT_STATUS_LABELS)}"
+        )
+    if runtime_status not in VALID_RUNTIME_STATUS_LABELS:
+        errors.append(
+            f"Invalid runtime_status '{runtime_status}'. Must be one of {sorted(VALID_RUNTIME_STATUS_LABELS)}"
+        )
+    if validation_status not in VALID_VALIDATION_STATUS_LABELS:
+        errors.append(
+            f"Invalid validation_status '{validation_status}'. Must be one of {sorted(VALID_VALIDATION_STATUS_LABELS)}"
+        )
+    return errors
 
 
 def verify_evaluation_record(record_dict: Dict[str, Any]) -> List[str]:
@@ -62,7 +90,7 @@ def run_dod_checks() -> bool:
     print("=================================================================")
 
     # Test 1: Validate Schema Contract on ChangeDetector Output
-    print("\n[Check 1/4] Validating ChangeDetector Schema & Adapter...")
+    print("\n[Check 1/5] Validating ChangeDetector Schema & Adapter...")
     sample_pipeline_output = {
         "status": "ok",
         "primary_index": "NDVI",
@@ -92,7 +120,7 @@ def run_dod_checks() -> bool:
     print(f"  PASS: Schema v{record.schema_version} verified. Status '{record.status}', Confidence: {record.confidence_score:.3f}")
 
     # Test 2: Verify Status Label Enforcement
-    print("\n[Check 2/4] Verifying Status Label Enforcement...")
+    print("\n[Check 2/5] Verifying Status Label Enforcement...")
     bogus_record = record.model_dump()
     bogus_record["status"] = "super_accurate_ai"
     errors = verify_evaluation_record(bogus_record)
@@ -102,7 +130,7 @@ def run_dod_checks() -> bool:
     print("  PASS: Unverified / dishonest status labels successfully rejected.")
 
     # Test 3: Decomposed Confidence Telemetry Check
-    print("\n[Check 3/4] Verifying 6-Factor Decomposed Confidence Telemetry...")
+    print("\n[Check 3/5] Verifying 6-Factor Decomposed Confidence Telemetry...")
     cb = record.confidence_breakdown
     if cb is None:
         print("  FAIL: Confidence breakdown missing in EvaluationRecord.")
@@ -114,11 +142,32 @@ def run_dod_checks() -> bool:
     print(f"  PASS: Decomposed factors verified (Composite: {composite:.4f}).")
 
     # Test 4: Fast Execution Trace Check
-    print("\n[Check 4/4] Verifying Audit Tool Trace Presence...")
+    print("\n[Check 4/5] Verifying Audit Tool Trace Presence...")
     if not record.tool_trace:
         print("  FAIL: Execution trace empty. Auditability requirement violated.")
         return False
     print(f"  PASS: Audit tool trace captured: {record.tool_trace}")
+
+    # Test 5: Tri-Axis Model Provenance Check
+    print("\n[Check 5/5] Verifying Tri-Axis Model Provenance Enforcement...")
+    tri_errors_valid = verify_tri_axis_status(
+        artifact_status="deterministic_algorithm",
+        runtime_status="inference_success",
+        validation_status="unvalidated",
+    )
+    if tri_errors_valid:
+        print(f"  FAIL: Valid tri-axis status rejected: {tri_errors_valid}")
+        return False
+
+    tri_errors_invalid = verify_tri_axis_status(
+        artifact_status="fabricated_magic_weights",
+        runtime_status="inference_success",
+        validation_status="unvalidated",
+    )
+    if not tri_errors_invalid:
+        print("  FAIL: Fabricated artifact status was not rejected by tri-axis validator.")
+        return False
+    print("  PASS: Tri-axis status enforcement verified (Artifact x Runtime x Validation).")
 
     print("\n=================================================================")
     print("ALL DEFINITION OF DONE (DoD) CHECKS PASSED SUCCESSFULLY.")
