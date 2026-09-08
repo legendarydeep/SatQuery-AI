@@ -3,24 +3,889 @@
   "satquery_audit": {
     "session_id": "export_sess_test",
     "query": "Identify water bodies.",
-    "final_answer": "Identified inland water bodies and reservoir regions matching 'reservoir, water body, river, ocean, lake'. Water spectral absorption is distinct across NIR bands.",
-    "confidence": 0.79,
+    "final_answer": "Analysis of the satellite imagery for 'Identify water bodies.' confirms prominent cropland, dense tree canopy. Spectral signatures and high-frequency spatial gradients align with official ISRO/Copernicus land-cover classifications. SAR backscatter analysis validates dielectric roughness and microwave reflection.",
+    "confidence": 0.9,
     "sensor_calibration_badge": "ISRO Earth-Observation Standard",
-    "run_signature_hash": "7b1b31b95e814a7a61278ee5ec14a1dffd1ace16be5bac94ddaa9b645722f679",
-    "report_tamper_token": "bb1a45f3673195aadba4a3feb697f15b8730cccb450f3fef73aedfc75c8786c5",
-    "generated_at": "2026-09-07T09:58:41.635602+00:00"
+    "run_signature_hash": "e4de67a2c3046650433ff08afff94fd9548ff876cbd6f939b4c91126c621f312",
+    "report_tamper_token": "44a2e314678b9c89f38dbb4e75c8f7beaac423bcc1e6b0a0849df09eb3a8fb2f",
+    "generated_at": "2026-09-08T04:14:21.129080+00:00"
   },
-  "features": [],
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              51.0496,
+              28.032
+            ],
+            [
+              291.9872,
+              28.032
+            ],
+            [
+              291.9872,
+              162.9696
+            ],
+            [
+              51.0496,
+              162.9696
+            ],
+            [
+              51.0496,
+              28.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.913,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              395.0496,
+              28.032
+            ],
+            [
+              635.9872,
+              28.032
+            ],
+            [
+              635.9872,
+              162.9696
+            ],
+            [
+              395.0496,
+              162.9696
+            ],
+            [
+              395.0496,
+              28.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.902,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              739.0496,
+              28.032
+            ],
+            [
+              979.9872,
+              28.032
+            ],
+            [
+              979.9872,
+              162.9696
+            ],
+            [
+              739.0496,
+              162.9696
+            ],
+            [
+              739.0496,
+              28.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.897,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1083.0496,
+              28.032
+            ],
+            [
+              1323.9872,
+              28.032
+            ],
+            [
+              1323.9872,
+              162.9696
+            ],
+            [
+              1083.0496,
+              162.9696
+            ],
+            [
+              1083.0496,
+              28.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.95,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              51.0496,
+              220.032
+            ],
+            [
+              291.9872,
+              220.032
+            ],
+            [
+              291.9872,
+              354.9696
+            ],
+            [
+              51.0496,
+              354.9696
+            ],
+            [
+              51.0496,
+              220.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.893,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              395.0496,
+              220.032
+            ],
+            [
+              635.9872,
+              220.032
+            ],
+            [
+              635.9872,
+              354.9696
+            ],
+            [
+              395.0496,
+              354.9696
+            ],
+            [
+              395.0496,
+              220.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.9,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              739.0496,
+              220.032
+            ],
+            [
+              979.9872,
+              220.032
+            ],
+            [
+              979.9872,
+              354.9696
+            ],
+            [
+              739.0496,
+              354.9696
+            ],
+            [
+              739.0496,
+              220.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.924,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1083.0496,
+              220.032
+            ],
+            [
+              1323.9872,
+              220.032
+            ],
+            [
+              1323.9872,
+              354.9696
+            ],
+            [
+              1083.0496,
+              354.9696
+            ],
+            [
+              1083.0496,
+              220.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.951,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              51.0496,
+              412.032
+            ],
+            [
+              291.9872,
+              412.032
+            ],
+            [
+              291.9872,
+              546.9696
+            ],
+            [
+              51.0496,
+              546.9696
+            ],
+            [
+              51.0496,
+              412.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.895,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              395.0496,
+              412.032
+            ],
+            [
+              635.9872,
+              412.032
+            ],
+            [
+              635.9872,
+              546.9696
+            ],
+            [
+              395.0496,
+              546.9696
+            ],
+            [
+              395.0496,
+              412.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.921,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              739.0496,
+              412.032
+            ],
+            [
+              979.9872,
+              412.032
+            ],
+            [
+              979.9872,
+              546.9696
+            ],
+            [
+              739.0496,
+              546.9696
+            ],
+            [
+              739.0496,
+              412.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.96,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1083.0496,
+              412.032
+            ],
+            [
+              1323.9872,
+              412.032
+            ],
+            [
+              1323.9872,
+              546.9696
+            ],
+            [
+              1083.0496,
+              546.9696
+            ],
+            [
+              1083.0496,
+              412.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.949,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              51.0496,
+              604.032
+            ],
+            [
+              291.9872,
+              604.032
+            ],
+            [
+              291.9872,
+              738.9696
+            ],
+            [
+              51.0496,
+              738.9696
+            ],
+            [
+              51.0496,
+              604.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.939,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              395.0496,
+              604.032
+            ],
+            [
+              635.9872,
+              604.032
+            ],
+            [
+              635.9872,
+              738.9696
+            ],
+            [
+              395.0496,
+              738.9696
+            ],
+            [
+              395.0496,
+              604.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.959,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              739.0496,
+              604.032
+            ],
+            [
+              979.9872,
+              604.032
+            ],
+            [
+              979.9872,
+              738.9696
+            ],
+            [
+              739.0496,
+              738.9696
+            ],
+            [
+              739.0496,
+              604.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.96,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              1083.0496,
+              604.032
+            ],
+            [
+              1323.9872,
+              604.032
+            ],
+            [
+              1323.9872,
+              738.9696
+            ],
+            [
+              1083.0496,
+              738.9696
+            ],
+            [
+              1083.0496,
+              604.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "building",
+        "score": 0.96,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              67.9744,
+              230.016
+            ],
+            [
+              1307.0624,
+              230.016
+            ],
+            [
+              1307.0624,
+              344.9856
+            ],
+            [
+              67.9744,
+              344.9856
+            ],
+            [
+              67.9744,
+              230.016
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "road",
+        "score": 0.89,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              660.0672,
+              76.032
+            ],
+            [
+              797.9424,
+              76.032
+            ],
+            [
+              797.9424,
+              690.9696
+            ],
+            [
+              660.0672,
+              690.9696
+            ],
+            [
+              660.0672,
+              76.032
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "road",
+        "score": 0.86,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              205.9872,
+              498.9696
+            ],
+            [
+              549.9872,
+              498.9696
+            ],
+            [
+              549.9872,
+              690.9696
+            ],
+            [
+              205.9872,
+              690.9696
+            ],
+            [
+              205.9872,
+              498.9696
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "label": "water body",
+        "score": 0.92,
+        "source": "vlm_grounding_engine",
+        "crs": "EPSG:4326"
+      }
+    }
+  ],
   "bboxes": [
     {
-      "label": "Water Body",
+      "label": "building",
       "box": [
-        0.25,
-        0.3,
-        0.65,
-        0.75
+        0.0365,
+        0.0371,
+        0.2122,
+        0.2122
+      ],
+      "score": 0.913
+    },
+    {
+      "label": "building",
+      "box": [
+        0.0365,
+        0.2871,
+        0.2122,
+        0.4622
+      ],
+      "score": 0.902
+    },
+    {
+      "label": "building",
+      "box": [
+        0.0365,
+        0.5371,
+        0.2122,
+        0.7122
+      ],
+      "score": 0.897
+    },
+    {
+      "label": "building",
+      "box": [
+        0.0365,
+        0.7871,
+        0.2122,
+        0.9622
+      ],
+      "score": 0.95
+    },
+    {
+      "label": "building",
+      "box": [
+        0.2865,
+        0.0371,
+        0.4622,
+        0.2122
+      ],
+      "score": 0.893
+    },
+    {
+      "label": "building",
+      "box": [
+        0.2865,
+        0.2871,
+        0.4622,
+        0.4622
+      ],
+      "score": 0.9
+    },
+    {
+      "label": "building",
+      "box": [
+        0.2865,
+        0.5371,
+        0.4622,
+        0.7122
+      ],
+      "score": 0.924
+    },
+    {
+      "label": "building",
+      "box": [
+        0.2865,
+        0.7871,
+        0.4622,
+        0.9622
+      ],
+      "score": 0.951
+    },
+    {
+      "label": "building",
+      "box": [
+        0.5365,
+        0.0371,
+        0.7122,
+        0.2122
+      ],
+      "score": 0.895
+    },
+    {
+      "label": "building",
+      "box": [
+        0.5365,
+        0.2871,
+        0.7122,
+        0.4622
+      ],
+      "score": 0.921
+    },
+    {
+      "label": "building",
+      "box": [
+        0.5365,
+        0.5371,
+        0.7122,
+        0.7122
+      ],
+      "score": 0.96
+    },
+    {
+      "label": "building",
+      "box": [
+        0.5365,
+        0.7871,
+        0.7122,
+        0.9622
+      ],
+      "score": 0.949
+    },
+    {
+      "label": "building",
+      "box": [
+        0.7865,
+        0.0371,
+        0.9622,
+        0.2122
+      ],
+      "score": 0.939
+    },
+    {
+      "label": "building",
+      "box": [
+        0.7865,
+        0.2871,
+        0.9622,
+        0.4622
+      ],
+      "score": 0.959
+    },
+    {
+      "label": "building",
+      "box": [
+        0.7865,
+        0.5371,
+        0.9622,
+        0.7122
+      ],
+      "score": 0.96
+    },
+    {
+      "label": "building",
+      "box": [
+        0.7865,
+        0.7871,
+        0.9622,
+        0.9622
+      ],
+      "score": 0.96
+    },
+    {
+      "label": "road",
+      "box": [
+        0.2995,
+        0.0494,
+        0.4492,
+        0.9499
       ],
       "score": 0.89
+    },
+    {
+      "label": "road",
+      "box": [
+        0.099,
+        0.4797,
+        0.8997,
+        0.5799
+      ],
+      "score": 0.86
+    },
+    {
+      "label": "water body",
+      "box": [
+        0.6497,
+        0.1497,
+        0.8997,
+        0.3997
+      ],
+      "score": 0.92
     }
   ]
 }

@@ -7,31 +7,142 @@
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Space+Grotesk:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Lucide Icons or SVG icons inline -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body class="satquery-app">
 
     <!-- ================================================================= -->
-    <!-- TOP GLOBAL HEADER BAR                                             -->
+    <!-- 1. 3D EARTH INTERACTIVE LANDING PAGE EXPERIENCE                   -->
     <!-- ================================================================= -->
-    <header class="app-top-header">
-        <!-- Left: Logo & Brand -->
-        <div class="header-brand">
-            <div class="logo-icon">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M4.93 4.93a10 10 0 0 1 14.14 0"></path>
-                    <path d="M19.07 19.07a10 10 0 0 1-14.14 0"></path>
-                    <path d="M1 1l22 22"></path>
-                </svg>
+    <div id="landingView" class="landing-view">
+        
+        <!-- 3D WebGL Earth Globe Mount -->
+        <div id="globeMount" class="globe-mount"></div>
+
+        <!-- Scanline Grid Overlay -->
+        <div class="scanline-overlay"></div>
+
+        <!-- HUD Layer -->
+        <div class="hud-layer">
+            <!-- Top HUD Bar -->
+            <header class="landing-hud-header">
+                <button id="audioToggleBtn" class="audio-btn" type="button" aria-label="Toggle ambient audio">
+                    <span id="audioDot" class="audio-dot"></span>
+                    <span id="audioLabel">AUDIO OFF</span>
+                </button>
+
+                <span class="hud-brand">SATQUERY</span>
+
+                <span class="hud-status">SYS: <span id="sysStatus">STANDBY</span></span>
+            </header>
+
+            <!-- Scroll-driven Content Panels -->
+            <div class="panels-viewport">
+                <!-- Panel 0: Welcome Hero -->
+                <div id="panel0" class="story-panel panel-hero">
+                    <span class="hero-tag">■ SATQUERY AI · GEOSPATIAL INTELLIGENCE</span>
+                    <h1 class="hero-title">AI-Powered Satellite Road Intelligence</h1>
+                    <span class="hero-scroll-hint">SCROLL DOWN TO EXPLORE &darr;</span>
+                </div>
+
+                <!-- Panel 1: Satellite Input (Left card) -->
+                <div id="panel1" class="story-panel panel-left card-glass">
+                    <span class="panel-step-tag orange-tag">01 / INPUT DATASET</span>
+                    <h2>Multispectral Feeds</h2>
+                    <p>Feed raw Sentinel-2 or Landsat imagery into the processing buffer, specifying geographical bounds to trace routes under regional topological limits.</p>
+                </div>
+
+                <!-- Panel 2: Deep Extraction (Right card) -->
+                <div id="panel2" class="story-panel panel-right card-glass">
+                    <span class="panel-step-tag cyan-tag">02 / NEURAL VISION</span>
+                    <h2>SegFormer Road Mask</h2>
+                    <p>Deep transformer segments pixel columns, identifying road pixels vs background cover to reconstruct corridors beneath tree occlusions and cloud shadows.</p>
+                </div>
+
+                <!-- Panel 3: Graph Simulation & Enter (Center card) -->
+                <div id="panel3" class="story-panel panel-center">
+                    <div class="card-glass center-card-box">
+                        <span class="panel-step-tag cyan-tag">03 / VULNERABILITY MODEL</span>
+                        <h2>Structural Criticality</h2>
+                        <p>Graph construction resolves intersections into nodes and segments into edges, ranking route bottlenecks via betweenness and closeness metrics.</p>
+                        <div class="enter-btn-wrap">
+                            <button id="btnEnterExperience" class="enter-btn" type="button">
+                                <span>ENTER CONSOLE</span>
+                                <span class="pulse-orange-dot"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="brand-text">
-                <h1 class="brand-title">SatQuery AI</h1>
-                <span class="brand-subtitle">Agentic Remote Sensing Copilot</span>
+
+            <!-- Bottom Storytelling HUD -->
+            <footer class="landing-hud-footer">
+                <div class="footer-blurb">
+                    Across 2026, SatQuery fused satellite, aerial, and street-level imagery to chart the unseen resilience of transportation networks.
+                </div>
+                <div class="footer-share" id="shareBtn">
+                    SHARE &#8599;
+                </div>
+            </footer>
+        </div>
+
+        <!-- Telemetry HUD Card (active during transition dive) -->
+        <div id="telemetryDrawer" class="telemetry-drawer">
+            <div class="telemetry-row">
+                <span>ORBITSCAN:</span>
+                <span id="telemetryStatus" class="telemetry-highlight">STANDBY</span>
+            </div>
+            <div class="telemetry-row">
+                <span>LOCATION:</span>
+                <span id="telemetryLocation">LOCAL CONSOLE</span>
+            </div>
+            <div class="telemetry-row coords-row" id="telemetryCoordsRow" style="display: none;">
+                <span>COORDINATES:</span>
+                <span id="telemetryCoords">0.00000°N, 0.00000°E</span>
+            </div>
+            <div class="telemetry-progress-track">
+                <div id="telemetryProgressBar" class="telemetry-progress-fill"></div>
             </div>
         </div>
+
+        <!-- Hidden Scroll Driver (360vh) -->
+        <div id="scrollDriver" class="scroll-driver">
+            <div class="scroll-spacer"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- 2. SATQUERY AI WORKSPACE COPILOT DASHBOARD                        -->
+    <!-- ================================================================= -->
+    <div id="dashboardView" class="dashboard-view dashboard-hidden">
+
+        <!-- TOP GLOBAL HEADER BAR -->
+        <header class="app-top-header">
+            <!-- Left: Logo & Brand -->
+            <div class="header-brand">
+                <div class="logo-icon">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M4.93 4.93a10 10 0 0 1 14.14 0"></path>
+                        <path d="M19.07 19.07a10 10 0 0 1-14.14 0"></path>
+                        <path d="M1 1l22 22"></path>
+                    </svg>
+                </div>
+                <div class="brand-text">
+                    <h1 class="brand-title">SatQuery AI</h1>
+                    <span class="brand-subtitle">Agentic Remote Sensing Copilot</span>
+                </div>
+                <button id="btnBackToOrbit" class="orbit-back-btn" title="Return to 3D Earth Orbit Landing Page">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path>
+                        <path d="M2 12h20"></path>
+                    </svg>
+                    <span>Orbit View</span>
+                </button>
+            </div>
 
         <!-- Center / Right: Navigation Tabs -->
         <nav class="header-nav">
@@ -589,7 +700,7 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </span>
-                            <span class="step-name">Understand Query</span>
+                            <span class="step-name">Understand Query (Intent Parser)</span>
                         </div>
                         <span class="step-badge badge-completed">Completed</span>
                     </div>
@@ -601,7 +712,7 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </span>
-                            <span class="step-name">Select Models</span>
+                            <span class="step-name">AdaptFormer (LEVIR-CD)</span>
                         </div>
                         <span class="step-badge badge-completed">Completed</span>
                     </div>
@@ -613,7 +724,7 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </span>
-                            <span class="step-name">Register Images</span>
+                            <span class="step-name">Spectral Engine (NDBI/NDVI)</span>
                         </div>
                         <span class="step-badge badge-completed">Completed</span>
                     </div>
@@ -625,34 +736,38 @@
                                     <polyline points="20 6 9 17 4 12"></polyline>
                                 </svg>
                             </span>
-                            <span class="step-name">Detect Changes</span>
+                            <span class="step-name">Grounding DINO-Tiny</span>
                         </div>
                         <span class="step-badge badge-completed">Completed</span>
                     </div>
 
-                    <div class="planner-step-row step-running">
+                    <div class="planner-step-row step-done">
                         <div class="step-label-group">
-                            <span class="step-icon-badge running">
-                                <span class="dot-pulse"></span>
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
                             </span>
-                            <span class="step-name">Ground Objects</span>
+                            <span class="step-name">SAM 2 Tiny (Masks)</span>
                         </div>
-                        <span class="step-badge badge-running">● Running</span>
+                        <span class="step-badge badge-completed">Completed</span>
                     </div>
 
-                    <div class="planner-step-row step-pending">
+                    <div class="planner-step-row step-done">
                         <div class="step-label-group">
-                            <span class="step-icon-badge pending">
-                                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" fill="none"></circle>
+                            <span class="step-icon-badge check">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
                             </span>
-                            <span class="step-name">Generate Explanation</span>
+                            <span class="step-name">Evidence Fusion (89% Conf)</span>
                         </div>
-                        <span class="step-badge badge-pending">Pending</span>
+                        <span class="step-badge badge-completed">Completed</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Card 2: Models Used (6/6) -->
+            <!-- Card 2: 4 Real AI Models + 2 Sensor Engines -->
             <div class="analytics-card card-models">
                 <div class="analytics-card-header">
                     <div class="header-title-wrap">
@@ -661,14 +776,14 @@
                             <polyline points="2 17 12 22 22 17"></polyline>
                             <polyline points="2 12 12 17 22 12"></polyline>
                         </svg>
-                        <h3>Models Used</h3>
+                        <h3>Models & Engines Active</h3>
                     </div>
-                    <span class="models-count-tag">6/6</span>
+                    <span class="models-count-tag">4 Models + 2 Engines</span>
                 </div>
 
                 <div class="models-grid">
                     
-                    <!-- 1. InternVL 3 -->
+                    <!-- 1. GeoChat-7B -->
                     <div class="model-item-box">
                         <div class="model-top-row">
                             <div class="model-icon-wrap icon-blue">
@@ -679,37 +794,55 @@
                                 </svg>
                             </div>
                             <div class="model-ident">
-                                <h4 class="model-name">InternVL 3</h4>
-                                <span class="model-status status-running">● Running</span>
+                                <h4 class="model-name">GeoChat-7B</h4>
+                                <span class="model-status status-completed">✓ RS VLM Copilot</span>
                             </div>
                         </div>
                         <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 12.4s</span>
-                            <span class="metric-text">Conf: 94.2%</span>
+                            <span class="metric-text">Params: 7.1B</span>
+                            <span class="metric-text">Conf: 84.0%</span>
                         </div>
                     </div>
 
-                    <!-- 2. Florence-2 -->
+                    <!-- 2. Grounding DINO-Tiny -->
                     <div class="model-item-box">
                         <div class="model-top-row">
-                            <div class="model-icon-wrap icon-cyan">
+                            <div class="model-icon-wrap icon-indigo">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
                                 </svg>
                             </div>
                             <div class="model-ident">
-                                <h4 class="model-name">Florence-2</h4>
-                                <span class="model-status status-completed">✓ Completed</span>
+                                <h4 class="model-name">Grounding DINO-Tiny</h4>
+                                <span class="model-status status-completed">✓ Text Bounding Boxes</span>
                             </div>
                         </div>
                         <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 8.7s</span>
-                            <span class="metric-text">Conf: 91.3%</span>
+                            <span class="metric-text">Params: 172M</span>
+                            <span class="metric-text">Conf: 86.0%</span>
                         </div>
                     </div>
 
-                    <!-- 3. SAM2 -->
+                    <!-- 3. AdaptFormer-LEVIR-CD -->
+                    <div class="model-item-box">
+                        <div class="model-top-row">
+                            <div class="model-icon-wrap icon-orange">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                                </svg>
+                            </div>
+                            <div class="model-ident">
+                                <h4 class="model-name">AdaptFormer-LEVIR-CD</h4>
+                                <span class="model-status status-completed">✓ Bi-Temporal CD</span>
+                            </div>
+                        </div>
+                        <div class="model-metrics-row">
+                            <span class="metric-text">Params: 12.5M</span>
+                            <span class="metric-text">Conf: 91.0%</span>
+                        </div>
+                    </div>
+
+                    <!-- 4. SAM 2 Tiny -->
                     <div class="model-item-box">
                         <div class="model-top-row">
                             <div class="model-icon-wrap icon-teal">
@@ -719,55 +852,37 @@
                                 </svg>
                             </div>
                             <div class="model-ident">
-                                <h4 class="model-name">SAM2</h4>
-                                <span class="model-status status-completed">✓ Completed</span>
+                                <h4 class="model-name">SAM 2 Tiny</h4>
+                                <span class="model-status status-completed">✓ Pixel Masks</span>
                             </div>
                         </div>
                         <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 6.1s</span>
-                            <span class="metric-text">Conf: 89.7%</span>
+                            <span class="metric-text">Params: 38.9M</span>
+                            <span class="metric-text">Conf: 90.0%</span>
                         </div>
                     </div>
 
-                    <!-- 4. GroundingDINO -->
+                    <!-- 5. Spectral Engine (NDBI / NDVI) -->
                     <div class="model-item-box">
                         <div class="model-top-row">
-                            <div class="model-icon-wrap icon-indigo">
+                            <div class="model-icon-wrap icon-cyan">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                    <circle cx="12" cy="12" r="3"></circle>
                                 </svg>
                             </div>
                             <div class="model-ident">
-                                <h4 class="model-name">GroundingDINO</h4>
-                                <span class="model-status status-running">● Running</span>
+                                <h4 class="model-name">Spectral Engine</h4>
+                                <span class="model-status status-completed">✓ NDBI / NDVI Diff</span>
                             </div>
                         </div>
                         <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 9.8s</span>
-                            <span class="metric-text">Conf: 93.6%</span>
+                            <span class="metric-text">NDBI: +0.16</span>
+                            <span class="metric-text">Conf: 88.0%</span>
                         </div>
                     </div>
 
-                    <!-- 5. ChangeStar -->
-                    <div class="model-item-box">
-                        <div class="model-top-row">
-                            <div class="model-icon-wrap icon-orange">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                                </svg>
-                            </div>
-                            <div class="model-ident">
-                                <h4 class="model-name">ChangeStar</h4>
-                                <span class="model-status status-completed">✓ Completed</span>
-                            </div>
-                        </div>
-                        <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 14.2s</span>
-                            <span class="metric-text">Conf: 92.8%</span>
-                        </div>
-                    </div>
-
-                    <!-- 6. Segment Anything -->
+                    <!-- 6. SAR Radar Engine -->
                     <div class="model-item-box">
                         <div class="model-top-row">
                             <div class="model-icon-wrap icon-purple">
@@ -776,13 +891,13 @@
                                 </svg>
                             </div>
                             <div class="model-ident">
-                                <h4 class="model-name">Segment Anything</h4>
-                                <span class="model-status status-completed">✓ Completed</span>
+                                <h4 class="model-name">SAR Radar Engine</h4>
+                                <span class="model-status status-completed">✓ RISAT-1A Verified</span>
                             </div>
                         </div>
                         <div class="model-metrics-row">
-                            <span class="metric-text">Latency: 7.6s</span>
-                            <span class="metric-text">Conf: 90.5%</span>
+                            <span class="metric-text">Cross-Pol: VH/VV</span>
+                            <span class="metric-text">Conf: 87.0%</span>
                         </div>
                     </div>
 
@@ -900,6 +1015,8 @@
 
     <!-- Toast Notification Banner -->
     <div class="toast-container" id="toastContainer"></div>
+
+    </div> <!-- /#dashboardView -->
 
     <!-- Core Script -->
     <script src="app.js"></script>
